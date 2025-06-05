@@ -1,0 +1,393 @@
+{
+  "userProfile": {
+    "name": "Your Name",
+    "tagline": "Your Professional Tagline (e.g., Software Engineer)",
+    "email": "your.email@example.com",
+    "phone": "+1234567890",
+    "location": "City, Country",
+    "websiteUrl": "https://yourdomain.com",
+    "profilePictureUrl": "/images/uploads/1748750621146-ADA_Memoji.png",
+    "socialLinks": [
+      {
+        "id": "social_linkedin",
+        "platformName": "LinkedIn",
+        "url": "https://www.linkedin.com/in/yourprofile/",
+        "iconSlug": "instagram"
+      },
+      {
+        "id": "social_github",
+        "platformName": "GitHub",
+        "url": "https://github.com/yourusername",
+        "iconSlug": "github"
+      }
+    ],
+    "cvTitle": "Curriculum Vitae",
+    "cvSummary": "A highly motivated and detail-oriented professional with X years of experience in [Field/Industry]. Seeking to leverage extensive expertise in [Key Skill 1] and [Key Skill 2] to contribute to [Objective/Company Type].",
+    "cvContactEmail": "your.formal.email@example.com",
+    "cvPhone": "+1234567890",
+    "cvLinkedinUrl": "https://www.linkedin.com/in/yourprofile/",
+    "cvPortfolioUrl": "https://yourdomain.com",
+    "education": [
+      {
+        "id": "edu_masters",
+        "degree": "Master of Science in Computer Science",
+        "institution": "University of Technology",
+        "location": "City, Country",
+        "graduationDate": "May 2020",
+        "details": [
+          "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
+          "GPA: 3.9/4.0, Dean's List."
+        ]
+      }
+    ],
+    "workExperience": [
+      {
+        "id": "work_current_job",
+        "jobTitle": "Senior Software Engineer",
+        "company": "Tech Solutions Inc.",
+        "companyUrl": "https://techsolutions.example.com",
+        "location": "City, Country",
+        "startDate": "June 2022",
+        "endDate": "Present",
+        "responsibilities": [
+          "Led the development of [Project X], resulting in a 20% increase in user engagement.",
+          "Mentored junior developers and conducted code reviews.",
+          "Collaborated with product managers to define project requirements and timelines."
+        ],
+        "technologiesUsed": [
+          "Java",
+          "Spring Boot",
+          "AWS",
+          "Microservices"
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "category": "Programming Languages",
+        "items": [
+          "JavaScript (ESNext)",
+          "Python",
+          "Java",
+          "C++",
+          "SQL"
+        ]
+      },
+      {
+        "category": "Frameworks & Libraries",
+        "items": [
+          "React",
+          "Next.js",
+          "Node.js",
+          "Express",
+          "Spring Boot",
+          "Django"
+        ]
+      },
+      {
+        "category": "Databases",
+        "items": [
+          "PostgreSQL",
+          "MongoDB",
+          "MySQL",
+          "Redis"
+        ]
+      },
+      {
+        "category": "Tools & Platforms",
+        "items": [
+          "Git",
+          "Docker",
+          "Kubernetes",
+          "AWS",
+          "Azure",
+          "Jenkins",
+          "JIRA"
+        ]
+      },
+      {
+        "category": "Languages",
+        "items": [
+          "English (Native)",
+          "Spanish (Proficient)"
+        ]
+      }
+    ],
+    "publications": [
+      {
+        "id": "pub_ai_paper",
+        "title": "A Novel Approach to Machine Learning Model Optimization",
+        "authors": "Your Name, Co-author Name",
+        "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
+        "date": "October 2023",
+        "url": "https://doi.org/your-paper-link"
+      }
+    ],
+    "awards": [
+      {
+        "id": "award_hackathon",
+        "name": "Best Innovation Award - Tech Hackathon 2022",
+        "issuer": "Tech Hackathon Organizers",
+        "date": "March 2022"
+      }
+    ]
+  },
+  "settings": {
+    "publicResumeId": "resume_web_dev_2025",
+    "availableTechnologies": [
+      "AWS",
+      "Angular",
+      "Bootstrap",
+      "Docker",
+      "Express.js",
+      "Firebase",
+      "GraphQL",
+      "JavaScript",
+      "Manta",
+      "MantineUI",
+      "Material-UI",
+      "MongoDB",
+      "MySQL",
+      "Next.js",
+      "Node.js",
+      "PostgreSQL",
+      "Python",
+      "REST API",
+      "React",
+      "SASS/SCSS",
+      "Supabase",
+      "Tailwind CSS",
+      "TypeScript",
+      "Vercel",
+      "Vue.js"
+    ],
+    "availableRoles": [
+      "Backend Developer",
+      "Data Analyst",
+      "Database Administrator",
+      "DevOps Engineer",
+      "Frontend Developer",
+      "Full-Stack Developer",
+      "Mobile Developer",
+      "Product Manager",
+      "Project Manager",
+      "UI/UX Designer"
+    ]
+  },
+  "landingPage": {
+    "greeting": "Hello there!",
+    "mainHeadline": "I'm [Your Name], a [Your Role] passionate about creating impactful digital experiences.",
+    "introductionParagraphs": [
+      "This is the first paragraph of my introduction. I love to code and build amazing things.",
+      "My journey in tech started when... and I've been hooked ever since."
+    ],
+    "callToActions": [
+      {
+        "id": "cta_portfolio",
+        "text": "View My Work",
+        "url": "/portfolio",
+        "style": "primary"
+      },
+      {
+        "id": "cta_contact",
+        "text": "Get In Touch",
+        "url": "mailto:your.email@example.com",
+        "style": "secondary"
+      }
+    ],
+    "featuredProjectIds": [
+      "project-alpha-showcase"
+    ]
+  },
+  "portfolio": {
+    "displaySettings": {
+      "defaultSortOrder": "date_desc",
+      "showFilters": true
+    },
+    "projects": []
+  },
+  "cv": {
+    "title": "Curriculum Vitae",
+    "contactInformation": {
+      "email": "your.formal.email@example.com",
+      "phone": "+1234567890",
+      "linkedinUrl": "https://www.linkedin.com/in/yourprofile/",
+      "portfolioUrl": "https://yourdomain.com"
+    },
+    "summary": "A highly motivated and detail-oriented professional with X years of experience in [Field/Industry]. Seeking to leverage extensive expertise in [Key Skill 1] and [Key Skill 2] to contribute to [Objective/Company Type].",
+    "education": [
+      {
+        "id": "edu_masters",
+        "degree": "Master of Science in Computer Science",
+        "institution": "University of Technology",
+        "location": "City, Country",
+        "graduationDate": "May 2020",
+        "details": [
+          "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
+          "GPA: 3.9/4.0, Dean's List."
+        ]
+      }
+    ],
+    "workExperience": [
+      {
+        "id": "work_current_job",
+        "jobTitle": "Senior Software Engineer",
+        "company": "Tech Solutions Inc.",
+        "companyUrl": "https://techsolutions.example.com",
+        "location": "City, Country",
+        "startDate": "June 2022",
+        "endDate": "Present",
+        "responsibilities": [
+          "Led the development of [Project X], resulting in a 20% increase in user engagement.",
+          "Mentored junior developers and conducted code reviews.",
+          "Collaborated with product managers to define project requirements and timelines."
+        ],
+        "technologiesUsed": [
+          "Java",
+          "Spring Boot",
+          "AWS",
+          "Microservices"
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "category": "Programming Languages",
+        "items": [
+          "JavaScript (ESNext)",
+          "Python",
+          "Java",
+          "C++",
+          "SQL"
+        ]
+      },
+      {
+        "category": "Frameworks & Libraries",
+        "items": [
+          "React",
+          "Next.js",
+          "Node.js",
+          "Express",
+          "Spring Boot",
+          "Django"
+        ]
+      },
+      {
+        "category": "Databases",
+        "items": [
+          "PostgreSQL",
+          "MongoDB",
+          "MySQL",
+          "Redis"
+        ]
+      },
+      {
+        "category": "Tools & Platforms",
+        "items": [
+          "Git",
+          "Docker",
+          "Kubernetes",
+          "AWS",
+          "Azure",
+          "Jenkins",
+          "JIRA"
+        ]
+      },
+      {
+        "category": "Languages",
+        "items": [
+          "English (Native)",
+          "Spanish (Proficient)"
+        ]
+      }
+    ],
+    "publications": [
+      {
+        "id": "pub_ai_paper",
+        "title": "A Novel Approach to Machine Learning Model Optimization",
+        "authors": "Your Name, Co-author Name",
+        "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
+        "date": "October 2023",
+        "url": "https://doi.org/your-paper-link"
+      }
+    ],
+    "awardsAndHonors": [
+      {
+        "id": "award_hackathon",
+        "name": "Best Innovation Award - Tech Hackathon 2022",
+        "issuer": "Tech Hackathon Organizers",
+        "date": "March 2022"
+      }
+    ]
+  },
+  "resumes": [
+    {
+      "id": "resume_web_dev_2025",
+      "nameForUser": "Web Developer Resume (Updated May 2025)",
+      "publicTitle": "Web Developer",
+      "contactInformation": {
+        "email": "your.webdev.resume@example.com"
+      },
+      "summary": "Dynamic and results-driven Web Developer with 5+ years of experience specializing in front-end technologies like React and Next.js. Passionate about building accessible and performant user interfaces.",
+      "sections": [
+        {
+          "id": "resume_webdev_exp",
+          "title": "Professional Experience",
+          "type": "experience",
+          "items": [
+            {
+              "jobTitle": "Frontend Developer",
+              "company": "Creative Agency X",
+              "date": "2022 - 2024",
+              "achievements": [
+                "Developed responsive UIs for 10+ client websites, improving Lighthouse scores by an average of 20 points.",
+                "Led a migration from vanilla JS to React for a major e-commerce client."
+              ],
+              "relatedPortfolioProjectIds": [
+                "project-alpha-showcase"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "resume_webdev_skills",
+          "title": "Technical Skills",
+          "type": "skills_list",
+          "items": [
+            "React",
+            "Next.js",
+            "TypeScript",
+            "JavaScript",
+            "HTML5",
+            "CSS3/Sass",
+            "Webpack",
+            "Git",
+            "REST APIs"
+          ]
+        },
+        {
+          "id": "resume_webdev_projects",
+          "title": "Projects",
+          "type": "projects",
+          "items": [
+            {
+              "portfolioProjectId": "project-alpha-showcase"
+            }
+          ]
+        },
+        {
+          "id": "resume_webdev_edu",
+          "title": "Education",
+          "type": "education",
+          "items": [
+            {
+              "degree": "B.S. in Web Design & Development",
+              "institution": "State University",
+              "graduationYear": "2019"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
