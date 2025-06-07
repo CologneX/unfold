@@ -461,32 +461,6 @@ export default function AddPortfolioPage() {
                 </Grid.Col>
               </Grid>
             </div>
-
-            <Divider />
-
-            {/* Links */}
-            <div>
-              <Text fw={500} size="lg" mb="sm">
-                Project Links
-              </Text>
-              <Grid>
-                <Grid.Col span={{ base: 12, md: 6 }}>
-                  <TextInput
-                    label="Live Project URL"
-                    placeholder="https://myproject.com"
-                    {...form.getInputProps("liveProjectUrl")}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, md: 6 }}>
-                  <TextInput
-                    label="Source Code URL"
-                    placeholder="https://github.com/username/repo"
-                    {...form.getInputProps("sourceCodeUrl")}
-                  />
-                </Grid.Col>
-              </Grid>
-            </div>
-
             <Divider />
 
             {/* Key Features */}
