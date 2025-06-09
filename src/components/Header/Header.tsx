@@ -12,7 +12,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
 import { usePathname } from "next/navigation";
-import CVDownloadPDFButton from "@/app/(pages)/curriculum-vitae/CVDownloadPDFButton";
+import CVDownloadPDFButton from "@/components/CVDownloadPDFButton";
 import {
   EditOutlined,
   HomeOutlined,
@@ -94,85 +94,9 @@ function MobileMenu({
       <Burger
         opened={opened}
         onClick={toggle}
-        // className={classes.burger}
         size="sm"
         hiddenFrom="sm"
       />
-      {/* <Popover
-        position="bottom-end"
-        shadow="md"
-        opened={opened}
-        onClose={close}
-      >
-        <PopoverTarget>
-          <Burger
-            opened={opened}
-            onClick={toggle}
-            // className={classes.burger}
-            size="sm"
-            hiddenFrom="sm"
-          />
-        </PopoverTarget>
-        <PopoverDropdown>
-          <Stack>
-            <Link href="/" onClick={close}>
-              <Button
-                variant={activeLink.link === "/" ? "filled" : "subtle"}
-                size="xl"
-                data-active={activeLink.link === "/" ? true : undefined}
-                leftSection={<HomeOutlined />}
-              >
-                Home
-              </Button>
-            </Link>
-            <Link href="/portfolio" onClick={close}>
-              <Button
-                variant={activeLink.link === "/portfolio" ? "filled" : "subtle"}
-                size="xl"
-                data-active={
-                  activeLink.link === "/portfolio" ? true : undefined
-                }
-                leftSection={<ProjectOutlined />}
-              >
-                Portfolio
-              </Button>
-            </Link>
-            <Link href="/curriculum-vitae" onClick={close}>
-              <Button
-                variant={
-                  activeLink.link === "/curriculum-vitae" ? "filled" : "subtle"
-                }
-                size="xl"
-                data-active={
-                  activeLink.link === "/curriculum-vitae" ? true : undefined
-                }
-                leftSection={<ProfileOutlined />}
-              >
-                CV
-              </Button>
-            </Link>
-          </Stack>
-        </PopoverDropdown>
-      </Popover> */}
-      {/* <Drawer
-        opened={opened}
-        onClose={close}
-        style={{
-          backgroundColor: "var(--mantine-color-blue-8)",
-        }}
-        styles={{
-          root: {
-            backgroundColor: "var(--mantine-color-blue-8)",
-          },
-        }}
-        portalProps={{
-          style: {
-            backgroundColor: "var(--mantine-color-blue-8)",
-          },
-        }}
-      >
-        
-      </Drawer> */}
     </>
   );
 }
@@ -204,9 +128,6 @@ export default function AppHeader() {
         <Group
           gap={0}
           justify="space-between"
-          // style={{
-          //   padding: "0.5rem 0",
-          // }}
         >
           <MobileMenu activeLink={activeLink || mainLinks[0]} />
 
@@ -227,37 +148,6 @@ export default function AppHeader() {
           </Group>
         </Group>
       </Container>
-
-      {/* {opened && (
-        <div style={{backgroundColor: "var(--mantine-color-default)"}}>
-          <Divider style={{ boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)" }} />
-          <Space>
-            <NavLink
-              component={Link}
-              href="/"
-              label="Home"
-              data-active={pathname === "/" ? true : undefined}
-              rightSection={<HomeOutlined />}
-            />
-            <NavLink
-              component={Link}
-              href="/portfolio"
-              label="Portfolio"
-              data-active={pathname.startsWith("/portfolio") ? true : undefined}
-              rightSection={<ProjectOutlined />}
-            />
-            <NavLink
-              component={Link}
-              href="/curriculum-vitae"
-              label="CV"
-              data-active={
-                pathname.startsWith("/curriculum-vitae") ? true : undefined
-              }
-              rightSection={<ProfileOutlined />}
-            />
-          </Space>
-        </div>
-      )} */}
     </>
   );
 }

@@ -1,16 +1,28 @@
 import { DownloadOutlined } from "@ant-design/icons";
-import { Button } from "@mantine/core";
+import { Button, type ButtonProps } from "@mantine/core";
 import CVPDFDocument from "@/components/CVPdf";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { fetchCV, fetchUserProfile, fetchPortfolio } from "@/app/actions";
 import { CV, UserProfile, Project } from "@/types/types";
 import { useEffect, useState } from "react";
 
-export default function CVDowloadPDFButton() {
-  return <InnerButton />;
+function DownloadButton({
+  children,
+  ...props
+}: ButtonProps & { children: React.ReactNode }) {
+  return (
+    <Button
+      leftSection={<DownloadOutlined />}
+      variant="gradient"
+      size="compact-md"
+      {...props}
+    >
+      {children}
+    </Button>
+  );
 }
 
-const InnerButton = () => {
+export default function CVDowloadPDFButton() {
   const [CV, setCV] = useState<CV | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [portfolioProjects, setPortfolioProjects] = useState<Project[]>([]);
@@ -44,29 +56,10 @@ const InnerButton = () => {
         }
         fileName="cv.pdf"
       >
-        <Button
-          // component={Link}
-          // href={""}
-          leftSection={<DownloadOutlined />}
-          variant="gradient"
-          size="compact-md"
-        >
-          CV
-        </Button>
+        <DownloadButton>CV</DownloadButton>
       </PDFDownloadLink>
     );
+  } else {
+    return <DownloadButton loading style={{ pointerEvents: "none", width: "24%" }}>Loading CV...</DownloadButton>;
   }
-  // return (
-  //   <PDFDownloadLink document={<CVPDFDocument cv={handleFetchCV()} userProfile={handleFetchUserProfile()} />} fileName="cv.pdf">
-  //     <Button
-  //       component={Link}
-  //       href={""}
-  //       leftSection={<DownloadOutlined />}
-  //       variant="gradient"
-  //       size="compact-md"
-  //     >
-  //       CV
-  //     </Button>
-  //   </PDFDownloadLink>
-  // );
-};
+}
