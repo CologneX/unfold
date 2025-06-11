@@ -66,6 +66,7 @@ import {
   isCVSkillCategoryItem,
   isCVPublicationItem,
   isCVAwardItem,
+  isCVCustomItem,
 } from "@/types/types";
 import { updateUserProfile, updateCV } from "@/app/actions";
 import { ImageInput } from "@/components/ImageInput/ImageInput";
@@ -156,8 +157,6 @@ export function ProfileEditForm({
     useState<CVSectionType>("education");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-  // Delete confirmation types
-
   // Delete confirmation states
   const [
     deleteModalOpened,
@@ -170,6 +169,13 @@ export function ProfileEditForm({
     message: string;
     onConfirm: () => void;
   } | null>(null);
+
+  // Custom section modal states
+  const [
+    customSectionModalOpened,
+    { open: openCustomSectionModal, close: closeCustomSectionModal },
+  ] = useDisclosure(false);
+  const [customSectionTitle, setCustomSectionTitle] = useState("");
 
   const router = useRouter();
 
@@ -290,6 +296,10 @@ export function ProfileEditForm({
             if (section?.type === "publications" && isCVPublicationItem(item)) {
               return value && value.trim() ? null : "Title is required";
             }
+
+            if (section?.type === "custom" && isCVCustomItem(item)) {
+              return value && value.trim() ? null : "Title is required";
+            }
             return null;
           },
           // Award validation
@@ -344,6 +354,61 @@ export function ProfileEditForm({
       setDeleteTarget(null);
     }
     closeDeleteModal();
+  };
+
+  // Custom section modal handlers
+  const openCustomSectionCreation = () => {
+    setCustomSectionTitle("");
+    openCustomSectionModal();
+  };
+
+  const createCustomSection = () => {
+    if (!customSectionTitle.trim()) {
+      notifications.show({
+        title: "Invalid Input",
+        message: "Please enter a section title.",
+        color: "red",
+      });
+      return;
+    }
+
+    const maxSortOrder = Math.max(
+      ...form.values.cvSections.map((s) => s.sortOrder),
+      -1
+    );
+
+    const newItem: CustomCVItem = {
+      id: `custom_${Date.now()}`,
+      title: "",
+      subtitle: "",
+      date: "",
+      description: "",
+      details: [],
+    };
+
+    const newSection: CVSection = {
+      id: `section_${Date.now()}`,
+      title: customSectionTitle.trim(),
+      type: "custom",
+      items: [newItem],
+      isVisible: true,
+      sortOrder: maxSortOrder + 1,
+    };
+
+    const newSections = [...form.values.cvSections, newSection];
+    form.setFieldValue("cvSections", newSections);
+
+    // Auto-focus on the first input of the new item
+    const sectionIndex = newSections.length - 1;
+    focusFirstInput(sectionIndex, 0);
+
+    notifications.show({
+      title: "Section Added",
+      message: `${customSectionTitle} section added successfully!`,
+      color: "green",
+    });
+
+    closeCustomSectionModal();
   };
 
   const handleSave = async (values: ProfileEditorForm) => {
@@ -407,7 +472,9 @@ export function ProfileEditForm({
       "socialLink",
       { index, link },
       "Delete Social Link",
-      `Are you sure you want to delete this ${link.platformName || "social"} link?`,
+      `Are you sure you want to delete this ${
+        link.platformName || "social"
+      } link?`,
       () => {
         form.setFieldValue(
           "socialLinks",
@@ -545,17 +612,8 @@ export function ProfileEditForm({
         } as Language;
         break;
       case "custom":
-        sectionTitle =
-          prompt("Enter custom section title:") || "Custom Section";
-        newItem = {
-          id: `custom_${Date.now()}`,
-          title: "",
-          subtitle: "",
-          date: "",
-          description: "",
-          details: [],
-        } as CustomCVItem;
-        break;
+        openCustomSectionCreation();
+        return; // Exit early since the modal will handle the creation
       default:
         return;
     }
@@ -594,7 +652,11 @@ export function ProfileEditForm({
       "section",
       { sectionIndex, section },
       "Delete CV Section",
-      `Are you sure you want to delete the "${section.title}" section? This will remove all ${section.items.length} item${section.items.length !== 1 ? "s" : ""} in this section.`,
+      `Are you sure you want to delete the "${
+        section.title
+      }" section? This will remove all ${section.items.length} item${
+        section.items.length !== 1 ? "s" : ""
+      } in this section.`,
       () => {
         const sections = form.values.cvSections.filter(
           (_, i) => i !== sectionIndex
@@ -749,6 +811,8 @@ export function ProfileEditForm({
       itemTitle = item.title || `Publication #${itemIndex + 1}`;
     } else if (isCVAwardItem(item)) {
       itemTitle = item.name || `Award #${itemIndex + 1}`;
+    } else if (isCVCustomItem(item)) {
+      itemTitle = item.title || `Custom Item #${itemIndex + 1}`;
     } else {
       itemTitle = `Item #${itemIndex + 1}`;
     }
@@ -792,10 +856,10 @@ export function ProfileEditForm({
       "id" in item
         ? item.id
         : "slug" in item
-          ? item.slug
-          : "category" in item
-            ? item.category
-            : "";
+        ? item.slug
+        : "category" in item
+        ? item.category
+        : "";
 
     if (isCVEducationItem(item)) {
       return (
@@ -1201,6 +1265,170 @@ export function ProfileEditForm({
       );
     }
 
+    if (isCVCustomItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Custom Item #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Title"
+                placeholder="Item title"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.title`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Subtitle"
+                placeholder="Optional subtitle"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.subtitle`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <TextInput
+              label="Date"
+              placeholder="Date or date range"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.date`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+            <Textarea
+              label="Description"
+              placeholder="Main description of this item..."
+              rows={3}
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.description`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+            <TagsInput
+              label="Additional Details"
+              placeholder="Type detail and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.details`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVCustomItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Custom Item #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Title"
+                placeholder="Item title"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.title`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Subtitle"
+                placeholder="Optional subtitle"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.subtitle`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <TextInput
+              label="Date"
+              placeholder="Date or date range"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.date`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+            <Textarea
+              label="Description"
+              placeholder="Main description of this item..."
+              rows={3}
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.description`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+            <TagsInput
+              label="Additional Details"
+              placeholder="Type detail and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.details`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
     // Default fallback for other types
     return (
       <Card
@@ -1225,7 +1453,7 @@ export function ProfileEditForm({
             Delete
           </Button>
         </Group>
-        <Text size="sm">Custom item (editing not yet implemented)</Text>
+        <Text size="sm">Unknown item type</Text>
       </Card>
     );
   };
@@ -1255,6 +1483,44 @@ export function ProfileEditForm({
               leftSection={<DeleteOutlined />}
             >
               Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Custom Section Creation Modal */}
+      <Modal
+        opened={customSectionModalOpened}
+        onClose={closeCustomSectionModal}
+        title="Create Custom Section"
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Section Title"
+            placeholder="e.g., Hobbies & Interests, Side Projects, Volunteer Work"
+            value={customSectionTitle}
+            onChange={(e) => setCustomSectionTitle(e.target.value)}
+            description="Give your custom section a descriptive name that represents the content you'll add."
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                createCustomSection();
+              }
+            }}
+          />
+          <Group justify="flex-end" gap="sm">
+            <Button variant="light" onClick={closeCustomSectionModal}>
+              Cancel
+            </Button>
+            <Button
+              onClick={createCustomSection}
+              leftSection={<PlusOutlined />}
+              disabled={!customSectionTitle.trim()}
+            >
+              Create Section
             </Button>
           </Group>
         </Stack>
