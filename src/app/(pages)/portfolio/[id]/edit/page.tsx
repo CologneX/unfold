@@ -6,13 +6,6 @@ import {
 } from "@/app/actions";
 import PortfolioEditForm from "./form";
 
-export const STATUS_OPTIONS = [
-  { value: "Completed", label: "Completed" },
-  { value: "In Progress", label: "In Progress" },
-  { value: "Planned", label: "Planned" },
-  { value: "On Hold", label: "On Hold" },
-];
-
 export default async function PortfolioEditPage({
   params,
 }: {

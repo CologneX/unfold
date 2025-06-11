@@ -6,7 +6,6 @@ import fs from "fs/promises";
 import {
   PortfolioData,
   Project,
-  Resume,
   CV,
   UUID,
   UserProfile,
@@ -17,7 +16,13 @@ import {
   WorkExperience,
   Publication,
   Award,
-  ResumeSection,
+  CVSection,
+  CVSectionItem,
+  Certification,
+  VolunteerExperience,
+  Language,
+  CustomCVItem,
+  SkillCategory,
 } from "@/types/types";
 
 // ========================================
@@ -26,12 +31,25 @@ import {
 
 const DATA_FILE_PATH = path.join(process.cwd(), "data", "data.json");
 
+function getCVItemId(item: CVSectionItem): string {
+  if ('id' in item && item.id) {
+    return item.id;
+  }
+  if ('slug' in item && item.slug) {
+    return item.slug;
+  }
+  if ('category' in item && item.category) {
+    return item.category; // For SkillCategory, use category as identifier
+  }
+  return uuidv4(); // Fallback for items without clear identifiers
+}
+
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/[^\w\s-]/g, "") 
+    .replace(/\s+/g, "-") 
+    .replace(/-+/g, "-")
     .trim();
 }
 
@@ -110,24 +128,6 @@ export async function fetchCV(): Promise<CV> {
   return data.cv;
 }
 
-export async function fetchResumes(): Promise<Resume[]> {
-  const data = await readPortfolioData();
-  return data.resumes;
-}
-
-export async function fetchResume(resumeId: UUID): Promise<Resume | null> {
-  const data = await readPortfolioData();
-  return data.resumes.find((r) => r.id === resumeId) || null;
-}
-
-export async function fetchPublicResume(): Promise<Resume | null> {
-  const data = await readPortfolioData();
-  if (!data.settings.publicResumeId) return null;
-  return (
-    data.resumes.find((r) => r.id === data.settings.publicResumeId) || null
-  );
-}
-
 // ========================================
 // Create Functions
 // ========================================
@@ -152,84 +152,6 @@ export async function createProject(
   return uniqueSlug;
 }
 
-export async function createResume(
-  resumeData: Omit<Resume, "id">
-): Promise<UUID> {
-  const data = await readPortfolioData();
-  const newResume: Resume = {
-    ...resumeData,
-    id: uuidv4(),
-    sections: resumeData.sections.map((section) => ({
-      ...section,
-      id: section.id || uuidv4(),
-    })),
-  };
-
-  data.resumes.push(newResume);
-  await writePortfolioData(data);
-  return newResume.id;
-}
-
-export async function createEducation(
-  educationData: Omit<Education, "id">
-): Promise<UUID> {
-  const data = await readPortfolioData();
-  const newEducation: Education = {
-    ...educationData,
-    id: uuidv4(),
-  };
-
-  data.cv.education.push(newEducation);
-  await writePortfolioData(data);
-  return newEducation.id;
-}
-
-export async function createWorkExperience(
-  workData: Omit<WorkExperience, "id">
-): Promise<UUID> {
-  const data = await readPortfolioData();
-  const newWork: WorkExperience = {
-    ...workData,
-    id: uuidv4(),
-  };
-
-  data.cv.workExperience.push(newWork);
-  await writePortfolioData(data);
-  return newWork.id;
-}
-
-export async function createPublication(
-  publicationData: Omit<Publication, "id">
-): Promise<UUID> {
-  const data = await readPortfolioData();
-  const newPublication: Publication = {
-    ...publicationData,
-    id: uuidv4(),
-  };
-
-  if (!data.cv.publications) {
-    data.cv.publications = [];
-  }
-  data.cv.publications.push(newPublication);
-  await writePortfolioData(data);
-  return newPublication.id;
-}
-
-export async function createAward(awardData: Omit<Award, "id">): Promise<UUID> {
-  const data = await readPortfolioData();
-  const newAward: Award = {
-    ...awardData,
-    id: uuidv4(),
-  };
-
-  if (!data.cv.awardsAndHonors) {
-    data.cv.awardsAndHonors = [];
-  }
-  data.cv.awardsAndHonors.push(newAward);
-  await writePortfolioData(data);
-  return newAward.id;
-}
-
 export async function createCallToAction(
   ctaData: Omit<CallToAction, "id">
 ): Promise<UUID> {
@@ -244,26 +166,552 @@ export async function createCallToAction(
   return newCTA.id;
 }
 
-export async function createResumeSection(
-  resumeId: UUID,
-  sectionData: Omit<ResumeSection, "id">
+// ========================================
+// CV Section CRUD Functions
+// ========================================
+
+export async function createCVSection(
+  sectionData: Omit<CVSection, "id" | "sortOrder">
 ): Promise<UUID> {
   const data = await readPortfolioData();
-  const resume = data.resumes.find((r) => r.id === resumeId);
-
-  if (!resume) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
+  
+  // Check if section type already exists (except for custom sections)
+  if (sectionData.type !== "custom") {
+    const existingSection = data.cv.sections.find(s => s.type === sectionData.type);
+    if (existingSection) {
+      throw new Error(`A ${sectionData.type} section already exists. Only one section of this type is allowed.`);
+    }
   }
-
-  const newSection: ResumeSection = {
+  
+  // Calculate the next sort order
+  const maxSortOrder = Math.max(
+    ...data.cv.sections.map(s => s.sortOrder),
+    -1
+  );
+  
+  const newSection: CVSection = {
     ...sectionData,
     id: uuidv4(),
+    sortOrder: maxSortOrder + 1,
   };
 
-  resume.sections.push(newSection);
+  data.cv.sections.push(newSection);
   await writePortfolioData(data);
   return newSection.id;
 }
+
+export async function updateCVSection(
+  sectionId: UUID,
+  sectionData: Partial<Omit<CVSection, "id">>
+): Promise<void> {
+  const data = await readPortfolioData();
+  const sectionIndex = data.cv.sections.findIndex(s => s.id === sectionId);
+
+  if (sectionIndex === -1) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  data.cv.sections[sectionIndex] = {
+    ...data.cv.sections[sectionIndex],
+    ...sectionData,
+  };
+
+  await writePortfolioData(data);
+}
+
+export async function deleteCVSection(sectionId: UUID): Promise<void> {
+  const data = await readPortfolioData();
+  const sectionIndex = data.cv.sections.findIndex(s => s.id === sectionId);
+
+  if (sectionIndex === -1) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  data.cv.sections.splice(sectionIndex, 1);
+  await writePortfolioData(data);
+}
+
+export async function reorderCVSections(sectionIds: UUID[]): Promise<void> {
+  const data = await readPortfolioData();
+  
+  // Validate that all section IDs exist
+  for (const sectionId of sectionIds) {
+    const section = data.cv.sections.find(s => s.id === sectionId);
+    if (!section) {
+      throw new Error(`CV section with ID ${sectionId} not found`);
+    }
+  }
+
+  // Update sort orders based on new order
+  data.cv.sections.forEach(section => {
+    const newIndex = sectionIds.indexOf(section.id);
+    if (newIndex !== -1) {
+      section.sortOrder = newIndex;
+    }
+  });
+
+  // Sort sections by sortOrder
+  data.cv.sections.sort((a, b) => a.sortOrder - b.sortOrder);
+  
+  await writePortfolioData(data);
+}
+
+export async function toggleCVSectionVisibility(sectionId: UUID): Promise<void> {
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  section.isVisible = !section.isVisible;
+  await writePortfolioData(data);
+}
+
+// ========================================
+// CV Section Item CRUD Functions
+// ========================================
+
+export async function createCVSectionItem(
+  sectionId: UUID,
+  itemData: Omit<CVSectionItem, "id">
+): Promise<UUID> {
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  const itemId = uuidv4();
+  const newItem: CVSectionItem = {
+    ...itemData,
+    id: itemId,
+  } as CVSectionItem;
+
+  section.items.push(newItem);
+  await writePortfolioData(data);
+  return itemId;
+}
+
+export async function updateCVSectionItem(
+  sectionId: UUID,
+  itemId: UUID,
+  itemData: Partial<CVSectionItem>
+): Promise<void> {
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  const itemIndex = section.items.findIndex(item => getCVItemId(item) === itemId);
+  if (itemIndex === -1) {
+    throw new Error(`CV section item with ID ${itemId} not found`);
+  }
+
+  section.items[itemIndex] = {
+    ...section.items[itemIndex],
+    ...itemData,
+  } as CVSectionItem;
+
+  await writePortfolioData(data);
+}
+
+export async function deleteCVSectionItem(
+  sectionId: UUID,
+  itemId: UUID
+): Promise<void> {
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  const itemIndex = section.items.findIndex(item => getCVItemId(item) === itemId);
+  if (itemIndex === -1) {
+    throw new Error(`CV section item with ID ${itemId} not found`);
+  }
+
+  section.items.splice(itemIndex, 1);
+  await writePortfolioData(data);
+}
+
+export async function reorderCVSectionItems(
+  sectionId: UUID,
+  itemIds: UUID[]
+): Promise<void> {
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  // Validate that all item IDs exist in this section
+  for (const itemId of itemIds) {
+    const item = section.items.find(i => getCVItemId(i) === itemId);
+    if (!item) {
+      throw new Error(`CV section item with ID ${itemId} not found in section ${sectionId}`);
+    }
+  }
+
+  // Reorder items based on itemIds array
+  const reorderedItems: CVSectionItem[] = [];
+  for (const itemId of itemIds) {
+    const item = section.items.find(i => getCVItemId(i) === itemId);
+    if (item) {
+      reorderedItems.push(item);
+    }
+  }
+
+  section.items = reorderedItems;
+  await writePortfolioData(data);
+}
+
+// ========================================
+// Specialized CV Item Creation Functions
+// ========================================
+
+export async function createEducationItem(
+  sectionId: UUID,
+  educationData: Omit<Education, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...educationData,
+    id: uuidv4(),
+  } as Education);
+}
+
+export async function createWorkExperienceItem(
+  sectionId: UUID,
+  workData: Omit<WorkExperience, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...workData,
+    id: uuidv4(),
+  } as WorkExperience);
+}
+
+export async function createSkillCategoryItem(
+  sectionId: UUID,
+  skillData: SkillCategory
+): Promise<UUID> {
+  // Note: SkillCategory doesn't have an id, so we'll treat it differently
+  const data = await readPortfolioData();
+  const section = data.cv.sections.find(s => s.id === sectionId);
+
+  if (!section) {
+    throw new Error(`CV section with ID ${sectionId} not found`);
+  }
+
+  section.items.push(skillData as CVSectionItem);
+  await writePortfolioData(data);
+  return uuidv4(); // Return a placeholder ID
+}
+
+export async function createPublicationItem(
+  sectionId: UUID,
+  publicationData: Omit<Publication, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...publicationData,
+    id: uuidv4(),
+  } as Publication);
+}
+
+export async function createAwardItem(
+  sectionId: UUID,
+  awardData: Omit<Award, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...awardData,
+    id: uuidv4(),
+  } as Award);
+}
+
+export async function createCertificationItem(
+  sectionId: UUID,
+  certificationData: Omit<Certification, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...certificationData,
+    id: uuidv4(),
+  } as Certification);
+}
+
+export async function createVolunteerExperienceItem(
+  sectionId: UUID,
+  volunteerData: Omit<VolunteerExperience, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...volunteerData,
+    id: uuidv4(),
+  } as VolunteerExperience);
+}
+
+export async function createLanguageItem(
+  sectionId: UUID,
+  languageData: Omit<Language, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...languageData,
+    id: uuidv4(),
+  } as Language);
+}
+
+export async function createCustomCVItem(
+  sectionId: UUID,
+  customData: Omit<CustomCVItem, "id">
+): Promise<UUID> {
+  return await createCVSectionItem(sectionId, {
+    ...customData,
+    id: uuidv4(),
+  } as CustomCVItem);
+}
+
+// ========================================
+// CV Section Template Functions
+// ========================================
+
+export async function createEducationSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if education section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "education");
+  if (existingSection) {
+    throw new Error("An education section already exists. Only one education section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Education",
+    type: "education",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createWorkExperienceSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if work experience section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "work_experience");
+  if (existingSection) {
+    throw new Error("A work experience section already exists. Only one work experience section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Professional Experience",
+    type: "work_experience",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createSkillsSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if skills section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "skills");
+  if (existingSection) {
+    throw new Error("A skills section already exists. Only one skills section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Skills & Expertise",
+    type: "skills",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createPublicationsSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if publications section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "publications");
+  if (existingSection) {
+    throw new Error("A publications section already exists. Only one publications section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Publications",
+    type: "publications",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createAwardsSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if awards section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "awards");
+  if (existingSection) {
+    throw new Error("An awards section already exists. Only one awards section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Awards & Honors",
+    type: "awards",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createCertificationsSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if certifications section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "certifications");
+  if (existingSection) {
+    throw new Error("A certifications section already exists. Only one certifications section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Certifications",
+    type: "certifications",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createVolunteeringSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if volunteering section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "volunteering");
+  if (existingSection) {
+    throw new Error("A volunteering section already exists. Only one volunteering section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Volunteer Experience",
+    type: "volunteering",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createLanguagesSection(): Promise<UUID> {
+  const data = await readPortfolioData();
+  
+  // Check if languages section already exists
+  const existingSection = data.cv.sections.find(s => s.type === "languages");
+  if (existingSection) {
+    throw new Error("A languages section already exists. Only one languages section is allowed.");
+  }
+  
+  return await createCVSection({
+    title: "Languages",
+    type: "languages",
+    items: [],
+    isVisible: true,
+  });
+}
+
+export async function createCustomSection(title: string): Promise<UUID> {
+  // Custom sections are allowed to have multiple instances
+  return await createCVSection({
+    title,
+    type: "custom",
+    items: [],
+    isVisible: true,
+  });
+}
+
+// ========================================
+// Migration Function (Legacy)
+// ========================================
+
+// export async function migrateCVToSections(): Promise<void> {
+//   const data = await readPortfolioData();
+  
+//   // Check if CV is already using sections structure
+//   if ('sections' in data.cv && Array.isArray(data.cv.sections)) {
+//     console.log("CV is already using sections structure");
+//     return;
+//   }
+
+//   // Migrate old CV structure to new sections structure
+//   const sections: CVSection[] = [];
+//   let sortOrder = 0;
+
+//   const oldCV = data.cv as any;
+
+//   // Migrate education
+//   if (oldCV.education?.length > 0) {
+//     sections.push({
+//       id: uuidv4(),
+//       title: "Education",
+//       type: "education",
+//       items: oldCV.education,
+//       isVisible: true,
+//       sortOrder: sortOrder++,
+//     });
+//   }
+
+//   // Migrate work experience
+//   if (oldCV.workExperience?.length > 0) {
+//     sections.push({
+//       id: uuidv4(),
+//       title: "Professional Experience",
+//       type: "work_experience",
+//       items: oldCV.workExperience,
+//       isVisible: true,
+//       sortOrder: sortOrder++,
+//     });
+//   }
+
+//   // Migrate skills
+//   if (oldCV.skills?.length > 0) {
+//     sections.push({
+//       id: uuidv4(),
+//       title: "Skills & Expertise",
+//       type: "skills",
+//       items: oldCV.skills,
+//       isVisible: true,
+//       sortOrder: sortOrder++,
+//     });
+//   }
+
+//   // Migrate publications
+//   if (oldCV.publications?.length > 0) {
+//     sections.push({
+//       id: uuidv4(),
+//       title: "Publications",
+//       type: "publications",
+//       items: oldCV.publications,
+//       isVisible: true,
+//       sortOrder: sortOrder++,
+//     });
+//   }
+
+//   // Migrate awards
+//   if (oldCV.awardsAndHonors?.length > 0) {
+//     sections.push({
+//       id: uuidv4(),
+//       title: "Awards & Honors",
+//       type: "awards",
+//       items: oldCV.awardsAndHonors,
+//       isVisible: true,
+//       sortOrder: sortOrder++,
+//     });
+//   }
+
+//   // Create new CV structure
+//   const newCV: CV = {
+//     title: oldCV.title || "Curriculum Vitae",
+//     contactInformation: oldCV.contactInformation,
+//     summary: oldCV.summary || "",
+//     sections,
+//   };
+
+//   data.cv = newCV;
+//   await writePortfolioData(data);
+// }
 
 // ========================================
 // Update Functions
@@ -321,154 +769,6 @@ export async function updateCV(cvData: Partial<CV>): Promise<void> {
   await writePortfolioData(data);
 }
 
-export async function updateResume(
-  resumeId: UUID,
-  resumeData: Partial<Omit<Resume, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-  const resumeIndex = data.resumes.findIndex((r) => r.id === resumeId);
-
-  if (resumeIndex === -1) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
-  }
-
-  data.resumes[resumeIndex] = {
-    ...data.resumes[resumeIndex],
-    ...resumeData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function updateEducation(
-  educationId: UUID,
-  educationData: Partial<Omit<Education, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-  const educationIndex = data.cv.education.findIndex(
-    (e) => e.id === educationId
-  );
-
-  if (educationIndex === -1) {
-    throw new Error(`Education with ID ${educationId} not found`);
-  }
-
-  data.cv.education[educationIndex] = {
-    ...data.cv.education[educationIndex],
-    ...educationData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function updateWorkExperience(
-  workId: UUID,
-  workData: Partial<Omit<WorkExperience, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-  const workIndex = data.cv.workExperience.findIndex((w) => w.id === workId);
-
-  if (workIndex === -1) {
-    throw new Error(`Work experience with ID ${workId} not found`);
-  }
-
-  data.cv.workExperience[workIndex] = {
-    ...data.cv.workExperience[workIndex],
-    ...workData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function updatePublication(
-  publicationId: UUID,
-  publicationData: Partial<Omit<Publication, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-
-  if (!data.cv.publications) {
-    throw new Error("No publications found");
-  }
-
-  const publicationIndex = data.cv.publications.findIndex(
-    (p) => p.id === publicationId
-  );
-
-  if (publicationIndex === -1) {
-    throw new Error(`Publication with ID ${publicationId} not found`);
-  }
-
-  data.cv.publications[publicationIndex] = {
-    ...data.cv.publications[publicationIndex],
-    ...publicationData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function updateAward(
-  awardId: UUID,
-  awardData: Partial<Omit<Award, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-
-  if (!data.cv.awardsAndHonors) {
-    throw new Error("No awards found");
-  }
-
-  const awardIndex = data.cv.awardsAndHonors.findIndex((a) => a.id === awardId);
-
-  if (awardIndex === -1) {
-    throw new Error(`Award with ID ${awardId} not found`);
-  }
-
-  data.cv.awardsAndHonors[awardIndex] = {
-    ...data.cv.awardsAndHonors[awardIndex],
-    ...awardData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function updateResumeSection(
-  resumeId: UUID,
-  sectionId: UUID,
-  sectionData: Partial<Omit<ResumeSection, "id">>
-): Promise<void> {
-  const data = await readPortfolioData();
-  const resume = data.resumes.find((r) => r.id === resumeId);
-
-  if (!resume) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
-  }
-
-  const sectionIndex = resume.sections.findIndex((s) => s.id === sectionId);
-
-  if (sectionIndex === -1) {
-    throw new Error(
-      `Section with ID ${sectionId} not found in resume ${resumeId}`
-    );
-  }
-
-  resume.sections[sectionIndex] = {
-    ...resume.sections[sectionIndex],
-    ...sectionData,
-  };
-
-  await writePortfolioData(data);
-}
-
-export async function setPublicResume(resumeId: UUID | null): Promise<void> {
-  const data = await readPortfolioData();
-
-  if (resumeId && !data.resumes.find((r) => r.id === resumeId)) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
-  }
-
-  data.settings.publicResumeId = resumeId || undefined;
-  await writePortfolioData(data);
-}
-
 // ========================================
 // Delete Functions
 // ========================================
@@ -490,113 +790,6 @@ export async function deleteProject(projectSlug: string): Promise<void> {
   data.landingPage.featuredProjectIds =
     data.landingPage.featuredProjectIds.filter((slug) => slug !== projectSlug);
 
-  // Remove project references from resume sections
-  data.resumes.forEach((resume) => {
-    resume.sections.forEach((section) => {
-      if (section.type === "projects") {
-        section.items = section.items.filter((item) =>
-          typeof item === "object" && "portfolioProjectId" in item
-            ? item.portfolioProjectId !== projectSlug
-            : true
-        );
-      } else if (section.type === "experience") {
-        section.items.forEach((item) => {
-          if (
-            typeof item === "object" &&
-            "relatedPortfolioProjectIds" in item &&
-            item.relatedPortfolioProjectIds
-          ) {
-            item.relatedPortfolioProjectIds =
-              item.relatedPortfolioProjectIds.filter(
-                (slug) => slug !== projectSlug
-              );
-          }
-        });
-      }
-    });
-  });
-
-  await writePortfolioData(data);
-}
-
-export async function deleteResume(resumeId: UUID): Promise<void> {
-  const data = await readPortfolioData();
-  const resumeIndex = data.resumes.findIndex((r) => r.id === resumeId);
-
-  if (resumeIndex === -1) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
-  }
-
-  // Clear public resume setting if this was the public resume
-  if (data.settings.publicResumeId === resumeId) {
-    data.settings.publicResumeId = undefined;
-  }
-
-  // Remove resume
-  data.resumes.splice(resumeIndex, 1);
-
-  await writePortfolioData(data);
-}
-
-export async function deleteEducation(educationId: UUID): Promise<void> {
-  const data = await readPortfolioData();
-  const educationIndex = data.cv.education.findIndex(
-    (e) => e.id === educationId
-  );
-
-  if (educationIndex === -1) {
-    throw new Error(`Education with ID ${educationId} not found`);
-  }
-
-  data.cv.education.splice(educationIndex, 1);
-  await writePortfolioData(data);
-}
-
-export async function deleteWorkExperience(workId: UUID): Promise<void> {
-  const data = await readPortfolioData();
-  const workIndex = data.cv.workExperience.findIndex((w) => w.id === workId);
-
-  if (workIndex === -1) {
-    throw new Error(`Work experience with ID ${workId} not found`);
-  }
-
-  data.cv.workExperience.splice(workIndex, 1);
-  await writePortfolioData(data);
-}
-
-export async function deletePublication(publicationId: UUID): Promise<void> {
-  const data = await readPortfolioData();
-
-  if (!data.cv.publications) {
-    throw new Error("No publications found");
-  }
-
-  const publicationIndex = data.cv.publications.findIndex(
-    (p) => p.id === publicationId
-  );
-
-  if (publicationIndex === -1) {
-    throw new Error(`Publication with ID ${publicationId} not found`);
-  }
-
-  data.cv.publications.splice(publicationIndex, 1);
-  await writePortfolioData(data);
-}
-
-export async function deleteAward(awardId: UUID): Promise<void> {
-  const data = await readPortfolioData();
-
-  if (!data.cv.awardsAndHonors) {
-    throw new Error("No awards found");
-  }
-
-  const awardIndex = data.cv.awardsAndHonors.findIndex((a) => a.id === awardId);
-
-  if (awardIndex === -1) {
-    throw new Error(`Award with ID ${awardId} not found`);
-  }
-
-  data.cv.awardsAndHonors.splice(awardIndex, 1);
   await writePortfolioData(data);
 }
 
@@ -611,29 +804,6 @@ export async function deleteCallToAction(ctaId: UUID): Promise<void> {
   }
 
   data.landingPage.callToActions.splice(ctaIndex, 1);
-  await writePortfolioData(data);
-}
-
-export async function deleteResumeSection(
-  resumeId: UUID,
-  sectionId: UUID
-): Promise<void> {
-  const data = await readPortfolioData();
-  const resume = data.resumes.find((r) => r.id === resumeId);
-
-  if (!resume) {
-    throw new Error(`Resume with ID ${resumeId} not found`);
-  }
-
-  const sectionIndex = resume.sections.findIndex((s) => s.id === sectionId);
-
-  if (sectionIndex === -1) {
-    throw new Error(
-      `Section with ID ${sectionId} not found in resume ${resumeId}`
-    );
-  }
-
-  resume.sections.splice(sectionIndex, 1);
   await writePortfolioData(data);
 }
 

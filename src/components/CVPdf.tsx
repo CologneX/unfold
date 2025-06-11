@@ -1,6 +1,20 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { CV, UserProfile, Project } from "@/types/types";
+import { 
+  CV, 
+  UserProfile, 
+  Project,
+  isCVEducationItem,
+  isCVWorkExperienceItem,
+  isCVSkillCategoryItem,
+  isCVPublicationItem,
+  isCVAwardItem,
+  Education,
+  WorkExperience,
+  SkillCategory,
+  Publication,
+  Award,
+} from "@/types/types";
 import { formatDateToMonthYear } from "@/lib/utils";
 
 const styles = StyleSheet.create({
@@ -168,6 +182,20 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
   userProfile,
   portfolioProjects,
 }) => {
+  // Extract sections by type
+  const workExperienceSection = cv.sections?.find(s => s.type === 'work_experience' && s.isVisible);
+  const educationSection = cv.sections?.find(s => s.type === 'education' && s.isVisible);
+  const skillsSection = cv.sections?.find(s => s.type === 'skills' && s.isVisible);
+  const publicationsSection = cv.sections?.find(s => s.type === 'publications' && s.isVisible);
+  const awardsSection = cv.sections?.find(s => s.type === 'awards' && s.isVisible);
+
+  // Extract items by type using type guards
+  const workExperience = workExperienceSection?.items.filter(isCVWorkExperienceItem) as WorkExperience[] || [];
+  const education = educationSection?.items.filter(isCVEducationItem) as Education[] || [];
+  const skills = skillsSection?.items.filter(isCVSkillCategoryItem) as SkillCategory[] || [];
+  const publications = publicationsSection?.items.filter(isCVPublicationItem) as Publication[] || [];
+  const awards = awardsSection?.items.filter(isCVAwardItem) as Award[] || [];
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -214,11 +242,11 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         )}
 
         {/* Core Competencies / Skills */}
-        {cv.skills && cv.skills.length > 0 && (
+        {skillsSection && skills.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Core Competencies</Text>
+            <Text style={styles.sectionTitle}>{skillsSection.title}</Text>
             <View style={styles.skillsContainer}>
-              {cv.skills.map((skillCategory, index) => (
+              {skills.map((skillCategory, index) => (
                 <View key={index} style={styles.skillCategory}>
                   <Text style={styles.skillCategoryTitle}>
                     {skillCategory.category}
@@ -233,15 +261,15 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         )}
 
         {/* Professional Experience */}
-        {cv.workExperience && cv.workExperience.length > 0 && (
+        {workExperienceSection && workExperience.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Professional Experience</Text>
-            {cv.workExperience.map((work) => (
+            <Text style={styles.sectionTitle}>{workExperienceSection.title}</Text>
+            {workExperience.map((work) => (
               <View key={work.id} style={styles.workEntry}>
                 <View style={styles.jobHeader}>
                   <Text style={styles.jobTitle}>{work.jobTitle}</Text>
                   <Text style={styles.dateRange}>
-                    {work.startDate} - {work.endDate}
+                    {work.startDate} - {work.endDate || (work.current ? "Present" : "")}
                   </Text>
                 </View>
                 <Text style={styles.companyLocation}>
@@ -263,14 +291,14 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         )}
 
         {/* Education */}
-        {cv.education && cv.education.length > 0 && (
+        {educationSection && education.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Education</Text>
-            {cv.education.map((edu) => (
+            <Text style={styles.sectionTitle}>{educationSection.title}</Text>
+            {education.map((edu) => (
               <View key={edu.id} style={styles.educationEntry}>
                 <View style={styles.degreeHeader}>
                   <Text style={styles.degree}>{edu.degree}</Text>
-                  <Text style={styles.dateRange}>{edu.graduationDate}</Text>
+                  <Text style={styles.dateRange}>{edu.graduationDate || (edu.current ? "Present" : "")}</Text>
                 </View>
                 <Text style={styles.institution}>
                   {edu.institution} | {edu.location}
@@ -318,10 +346,10 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         )}
 
         {/* Publications */}
-        {cv.publications && cv.publications.length > 0 && (
+        {publicationsSection && publications.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Publications</Text>
-            {cv.publications.map((pub) => (
+            <Text style={styles.sectionTitle}>{publicationsSection.title}</Text>
+            {publications.map((pub) => (
               <View key={pub.id} style={styles.projectEntry}>
                 <View style={styles.projectHeader}>
                   <Text style={styles.projectTitle}>{pub.title}</Text>
@@ -344,10 +372,10 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         )}
 
         {/* Awards & Honors */}
-        {cv.awardsAndHonors && cv.awardsAndHonors.length > 0 && (
+        {awardsSection && awards.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Awards & Recognition</Text>
-            {cv.awardsAndHonors.map((award) => (
+            <Text style={styles.sectionTitle}>{awardsSection.title}</Text>
+            {awards.map((award) => (
               <View key={award.id} style={styles.projectEntry}>
                 <View style={styles.projectHeader}>
                   <Text style={styles.projectTitle}>{award.name}</Text>

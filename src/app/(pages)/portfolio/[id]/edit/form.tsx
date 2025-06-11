@@ -25,8 +25,14 @@ import { ImageInput } from "@/components/ImageInput/ImageInput";
 import { TextAreaEditor } from "@/app/(pages)/portfolio/add/RichTextEditor";
 import { JSONContent } from "@tiptap/react";
 import { Project } from "@/types/types";
-import { STATUS_OPTIONS } from "./page";
 import { notifications } from "@mantine/notifications";
+
+const STATUS_OPTIONS = [
+  { value: "Completed", label: "Completed" },
+  { value: "In Progress", label: "In Progress" },
+  { value: "Planned", label: "Planned" },
+  { value: "On Hold", label: "On Hold" },
+];
 
 interface ProjectFormData {
   title: string;

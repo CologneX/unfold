@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Paper,
   Title,
@@ -19,7 +19,8 @@ import {
   ThemeIcon,
   Textarea,
   TagsInput,
-  Badge,
+  Select,
+  Modal,
 } from "@mantine/core";
 import {
   UserOutlined,
@@ -39,29 +40,34 @@ import {
   BulbOutlined,
   FileTextOutlined,
   TrophyOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { useForm } from "@mantine/form";
+import { useDisclosure } from "@mantine/hooks";
 import {
   UserProfile,
   SocialLink,
   CV,
+  CVSection,
+  CVSectionType,
+  CVSectionItem,
   Education,
   WorkExperience,
   SkillCategory,
   Publication,
   Award,
-  Project,
-  UUID,
+  Certification,
+  VolunteerExperience,
+  Language,
+  CustomCVItem,
+  isCVEducationItem,
+  isCVWorkExperienceItem,
+  isCVSkillCategoryItem,
+  isCVPublicationItem,
+  isCVAwardItem,
 } from "@/types/types";
-import {
-  updateUserProfile,
-  updateCV,
-  deleteEducation,
-  deleteWorkExperience,
-  deletePublication,
-  deleteAward,
-  fetchPortfolio,
-} from "@/app/actions";
+import { updateUserProfile, updateCV } from "@/app/actions";
 import { ImageInput } from "@/components/ImageInput/ImageInput";
 import { useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
@@ -89,6 +95,30 @@ const SOCIAL_PLATFORMS = [
   },
 ];
 
+const SECTION_TYPES: {
+  value: CVSectionType;
+  label: string;
+  icon: typeof BookOutlined;
+}[] = [
+  { value: "education", label: "Education", icon: BookOutlined },
+  {
+    value: "work_experience",
+    label: "Work Experience",
+    icon: CarryOutOutlined,
+  },
+  { value: "skills", label: "Skills", icon: BulbOutlined },
+  { value: "publications", label: "Publications", icon: FileTextOutlined },
+  { value: "awards", label: "Awards & Honors", icon: TrophyOutlined },
+  { value: "certifications", label: "Certifications", icon: TrophyOutlined },
+  {
+    value: "volunteering",
+    label: "Volunteer Experience",
+    icon: CarryOutOutlined,
+  },
+  { value: "languages", label: "Languages", icon: GlobalOutlined },
+  { value: "custom", label: "Custom Section", icon: PlusOutlined },
+];
+
 interface ProfileEditorForm {
   name: string;
   tagline: string;
@@ -98,20 +128,13 @@ interface ProfileEditorForm {
   websiteUrl: string;
   profilePictureUrl: string;
   socialLinks: SocialLink[];
-  // CV fields
   cvTitle: string;
   cvSummary: string;
   cvContactEmail: string;
   cvPhone: string;
   cvLinkedinUrl: string;
   cvPortfolioUrl: string;
-  // CV arrays in form
-  education: Education[];
-  workExperience: WorkExperience[];
-  skills: SkillCategory[];
-  projects: UUID[]; // Project slugs to include in CV
-  publications: Publication[];
-  awards: Award[];
+  cvSections: CVSection[];
 }
 
 interface ProfileEditFormProps {
@@ -119,12 +142,35 @@ interface ProfileEditFormProps {
   initialCV: CV;
 }
 
+type DeleteTargetData =
+  | { index: number; link: SocialLink }
+  | { sectionIndex: number; section: CVSection }
+  | { sectionIndex: number; itemIndex: number; item: CVSectionItem };
+
 export function ProfileEditForm({
   initialProfile,
   initialCV,
 }: ProfileEditFormProps) {
   const [saving, setSaving] = useState(false);
-  const [portfolioProjects, setPortfolioProjects] = useState<Project[]>([]);
+  const [selectedSectionType, setSelectedSectionType] =
+    useState<CVSectionType>("education");
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
+  // Delete confirmation types
+
+  // Delete confirmation states
+  const [
+    deleteModalOpened,
+    { open: openDeleteModal, close: closeDeleteModal },
+  ] = useDisclosure(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "socialLink" | "section" | "sectionItem";
+    data: DeleteTargetData;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   const router = useRouter();
 
   const form = useForm<ProfileEditorForm>({
@@ -137,20 +183,13 @@ export function ProfileEditForm({
       websiteUrl: initialProfile.websiteUrl || "",
       profilePictureUrl: initialProfile.profilePictureUrl || "",
       socialLinks: initialProfile.socialLinks || [],
-      // CV fields
       cvTitle: initialCV.title || "Curriculum Vitae",
       cvSummary: initialCV.summary || "",
       cvContactEmail: initialCV.contactInformation?.email || "",
       cvPhone: initialCV.contactInformation?.phone || "",
       cvLinkedinUrl: initialCV.contactInformation?.linkedinUrl || "",
       cvPortfolioUrl: initialCV.contactInformation?.portfolioUrl || "",
-      // CV arrays
-      education: initialCV.education || [],
-      workExperience: initialCV.workExperience || [],
-      skills: initialCV.skills || [],
-      projects: initialCV.projects || [],
-      publications: initialCV.publications || [],
-      awards: initialCV.awardsAndHonors || [],
+      cvSections: initialCV.sections || [],
     },
     validate: {
       name: (value) => (value.trim() ? null : "Name is required"),
@@ -167,50 +206,156 @@ export function ProfileEditForm({
       socialLinks: {
         url: (value) => (/^https?:\/\/.+/.test(value) ? null : "Invalid URL"),
       },
-      education: {
-        institution: (value) =>
-          value.trim() ? null : "Institution is required",
-        degree: (value) => (value.trim() ? null : "Degree is required"),
-      },
-      workExperience: {
-        company: (value) => (value.trim() ? null : "Company is required"),
-        jobTitle: (value) => (value.trim() ? null : "Job title is required"),
-      },
-      publications: {
-        title: (value) => (value.trim() ? null : "Title is required"),
-        url: (value) =>
-          !value || /^https?:\/\/.+/.test(value) ? null : "Invalid URL format",
-      },
-      awards: {
-        name: (value) => (value.trim() ? null : "Award name is required"),
+      cvSections: {
+        title: (value) =>
+          value && value.trim() ? null : "Section title is required",
+        items: {
+          // Education validation
+          degree: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "education" && isCVEducationItem(item)) {
+              return value && value.trim() ? null : "Degree is required";
+            }
+            return null;
+          },
+          institution: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "education" && isCVEducationItem(item)) {
+              return value && value.trim() ? null : "Institution is required";
+            }
+            return null;
+          },
+          // Work experience validation
+          jobTitle: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "work_experience" &&
+              isCVWorkExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Job title is required";
+            }
+            return null;
+          },
+          company: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "work_experience" &&
+              isCVWorkExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Company is required";
+            }
+            return null;
+          },
+          // Skills validation
+          category: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "skills" && isCVSkillCategoryItem(item)) {
+              return value && value.trim() ? null : "Category is required";
+            }
+            return null;
+          },
+          // Publication validation
+          title: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "publications" && isCVPublicationItem(item)) {
+              return value && value.trim() ? null : "Title is required";
+            }
+            return null;
+          },
+          // Award validation
+          name: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "awards" && isCVAwardItem(item)) {
+              return value && value.trim() ? null : "Award name is required";
+            }
+            return null;
+          },
+        },
       },
     },
   });
 
-  // Fetch portfolio projects for selection
-  useEffect(() => {
-    const loadPortfolioProjects = async () => {
-      try {
-        const projects = await fetchPortfolio();
-        setPortfolioProjects(projects || []);
-      } catch (error) {
-        console.error("Failed to fetch portfolio projects:", error);
+  // Auto-focus utility
+  const focusFirstInput = (sectionIndex: number, itemIndex: number) => {
+    setTimeout(() => {
+      const firstInput = document.querySelector(
+        `[data-section="${sectionIndex}"][data-item="${itemIndex}"] input, [data-section="${sectionIndex}"][data-item="${itemIndex}"] textarea`
+      ) as HTMLInputElement;
+      if (firstInput) {
+        firstInput.focus();
+        setEditingItemId(`${sectionIndex}-${itemIndex}`);
       }
-    };
+    }, 100);
+  };
 
-    loadPortfolioProjects();
-  }, []);
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = form.isDirty() || editingItemId !== null;
+
+  // Delete confirmation handler
+  const handleDeleteConfirmation = (
+    type: "socialLink" | "section" | "sectionItem",
+    data: DeleteTargetData,
+    title: string,
+    message: string,
+    onConfirm: () => void
+  ) => {
+    setDeleteTarget({ type, data, title, message, onConfirm });
+    openDeleteModal();
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteTarget.onConfirm();
+      setDeleteTarget(null);
+    }
+    closeDeleteModal();
+  };
 
   const handleSave = async (values: ProfileEditorForm) => {
     try {
       setSaving(true);
+      setEditingItemId(null);
 
       // Update profile
       await updateUserProfile(values);
 
-      // Update CV with basic info and arrays
+      // Update CV with all data including sections
       const updatedCV: CV = {
-        ...initialCV,
         title: values.cvTitle,
         summary: values.cvSummary,
         contactInformation: {
@@ -219,11 +364,7 @@ export function ProfileEditForm({
           linkedinUrl: values.cvLinkedinUrl,
           portfolioUrl: values.cvPortfolioUrl,
         },
-        education: values.education,
-        workExperience: values.workExperience,
-        skills: values.skills,
-        publications: values.publications,
-        awardsAndHonors: values.awards,
+        sections: values.cvSections,
       };
 
       await updateCV(updatedCV);
@@ -249,6 +390,7 @@ export function ProfileEditForm({
     }
   };
 
+  // Social Links Management
   const addSocialLink = () => {
     const newLink: SocialLink = {
       id: `social_${Date.now()}`,
@@ -260,9 +402,18 @@ export function ProfileEditForm({
   };
 
   const removeSocialLink = (index: number) => {
-    form.setFieldValue(
-      "socialLinks",
-      form.values.socialLinks.filter((_, i) => i !== index)
+    const link = form.values.socialLinks[index];
+    handleDeleteConfirmation(
+      "socialLink",
+      { index, link },
+      "Delete Social Link",
+      `Are you sure you want to delete this ${link.platformName || "social"} link?`,
+      () => {
+        form.setFieldValue(
+          "socialLinks",
+          form.values.socialLinks.filter((_, i) => i !== index)
+        );
+      }
     );
   };
 
@@ -287,185 +438,828 @@ export function ProfileEditForm({
   const getSocialPlatform = (iconSlug: string) =>
     SOCIAL_PLATFORMS.find((p) => p.slug === iconSlug);
 
-  // CV Management Functions
-  const addEducation = () => {
-    const newEducation: Education = {
-      id: `edu_${Date.now()}`,
-      institution: "",
-      degree: "",
-      location: "",
-      graduationDate: "",
-      details: [],
-    };
-    form.setFieldValue("education", [...form.values.education, newEducation]);
-  };
-
-  const updateEducationField = (
-    index: number,
-    field: keyof Education,
-    value: string | string[]
-  ) => {
-    const updated = [...form.values.education];
-    updated[index] = { ...updated[index], [field]: value };
-    form.setFieldValue("education", updated);
-  };
-
-  const removeEducation = async (index: number) => {
-    const eduToRemove = form.values.education[index];
-    if (eduToRemove.id && !eduToRemove.id.startsWith("edu_")) {
-      await deleteEducation(eduToRemove.id);
+  // CV Section Management
+  const addNewSection = () => {
+    if (hasUnsavedChanges) {
+      notifications.show({
+        title: "Unsaved Changes",
+        message:
+          "Please save your current changes before adding a new section.",
+        color: "orange",
+      });
+      return;
     }
-    form.setFieldValue(
-      "education",
-      form.values.education.filter((_, i) => i !== index)
+
+    const maxSortOrder = Math.max(
+      ...form.values.cvSections.map((s) => s.sortOrder),
+      -1
     );
-  };
 
-  const addWorkExperience = () => {
-    const newWork: WorkExperience = {
-      id: `work_${Date.now()}`,
-      company: "",
-      jobTitle: "",
-      location: "",
-      startDate: "",
-      endDate: "",
-      responsibilities: [],
-      technologiesUsed: [],
-    };
-    form.setFieldValue("workExperience", [
-      ...form.values.workExperience,
-      newWork,
-    ]);
-  };
+    let sectionTitle = "";
+    let newItem: CVSectionItem;
 
-  const updateWorkField = (
-    index: number,
-    field: keyof WorkExperience,
-    value: string | string[]
-  ) => {
-    const updated = [...form.values.workExperience];
-    updated[index] = { ...updated[index], [field]: value };
-    form.setFieldValue("workExperience", updated);
-  };
-
-  const removeWorkExperience = async (index: number) => {
-    const workToRemove = form.values.workExperience[index];
-    if (workToRemove.id && !workToRemove.id.startsWith("work_")) {
-      await deleteWorkExperience(workToRemove.id);
+    switch (selectedSectionType) {
+      case "education":
+        sectionTitle = "Education";
+        newItem = {
+          id: `edu_${Date.now()}`,
+          degree: "",
+          institution: "",
+          location: "",
+          graduationDate: "",
+          details: [],
+        } as Education;
+        break;
+      case "work_experience":
+        sectionTitle = "Professional Experience";
+        newItem = {
+          id: `work_${Date.now()}`,
+          jobTitle: "",
+          company: "",
+          location: "",
+          startDate: "",
+          endDate: "",
+          responsibilities: [],
+          technologiesUsed: [],
+        } as WorkExperience;
+        break;
+      case "skills":
+        sectionTitle = "Skills & Expertise";
+        newItem = {
+          category: "",
+          items: [],
+        } as SkillCategory;
+        break;
+      case "publications":
+        sectionTitle = "Publications";
+        newItem = {
+          id: `pub_${Date.now()}`,
+          title: "",
+          authors: "",
+          conferenceOrJournal: "",
+          date: "",
+          url: "",
+        } as Publication;
+        break;
+      case "awards":
+        sectionTitle = "Awards & Honors";
+        newItem = {
+          id: `award_${Date.now()}`,
+          name: "",
+          issuer: "",
+          date: "",
+          description: "",
+        } as Award;
+        break;
+      case "certifications":
+        sectionTitle = "Certifications";
+        newItem = {
+          id: `cert_${Date.now()}`,
+          name: "",
+          issuer: "",
+          date: "",
+          expirationDate: "",
+          credentialId: "",
+          credentialUrl: "",
+        } as Certification;
+        break;
+      case "volunteering":
+        sectionTitle = "Volunteer Experience";
+        newItem = {
+          id: `vol_${Date.now()}`,
+          organization: "",
+          role: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+          location: "",
+        } as VolunteerExperience;
+        break;
+      case "languages":
+        sectionTitle = "Languages";
+        newItem = {
+          id: `lang_${Date.now()}`,
+          language: "",
+          proficiency: "Intermediate",
+          proofUrl: "",
+        } as Language;
+        break;
+      case "custom":
+        sectionTitle =
+          prompt("Enter custom section title:") || "Custom Section";
+        newItem = {
+          id: `custom_${Date.now()}`,
+          title: "",
+          subtitle: "",
+          date: "",
+          description: "",
+          details: [],
+        } as CustomCVItem;
+        break;
+      default:
+        return;
     }
-    form.setFieldValue(
-      "workExperience",
-      form.values.workExperience.filter((_, i) => i !== index)
+
+    const newSection: CVSection = {
+      id: `section_${Date.now()}`,
+      title: sectionTitle,
+      type: selectedSectionType,
+      items: [newItem],
+      isVisible: true,
+      sortOrder: maxSortOrder + 1,
+    };
+
+    const newSections = [...form.values.cvSections, newSection];
+    form.setFieldValue("cvSections", newSections);
+
+    // Auto-focus on the first input of the new item
+    const sectionIndex = newSections.length - 1;
+    focusFirstInput(sectionIndex, 0);
+
+    notifications.show({
+      title: "Section Added",
+      message: `${sectionTitle} section added successfully!`,
+      color: "green",
+    });
+  };
+
+  const toggleSectionVisibility = (sectionIndex: number) => {
+    const sections = [...form.values.cvSections];
+    sections[sectionIndex].isVisible = !sections[sectionIndex].isVisible;
+    form.setFieldValue("cvSections", sections);
+  };
+
+  const deleteSection = (sectionIndex: number, section: CVSection) => {
+    handleDeleteConfirmation(
+      "section",
+      { sectionIndex, section },
+      "Delete CV Section",
+      `Are you sure you want to delete the "${section.title}" section? This will remove all ${section.items.length} item${section.items.length !== 1 ? "s" : ""} in this section.`,
+      () => {
+        const sections = form.values.cvSections.filter(
+          (_, i) => i !== sectionIndex
+        );
+        form.setFieldValue("cvSections", sections);
+        notifications.show({
+          title: "Success",
+          message: "Section deleted successfully!",
+          color: "green",
+        });
+      }
     );
   };
 
-  const addSkillCategory = () => {
-    const newSkill: SkillCategory = {
-      category: "",
-      items: [],
-    };
-    form.setFieldValue("skills", [...form.values.skills, newSkill]);
-  };
-
-  const updateSkillCategory = (
-    index: number,
-    field: keyof SkillCategory,
-    value: string | string[]
+  const addItemToSection = (
+    sectionIndex: number,
+    sectionType: CVSectionType
   ) => {
-    const updated = [...form.values.skills];
-    updated[index] = { ...updated[index], [field]: value };
-    form.setFieldValue("skills", updated);
-  };
-
-  const removeSkillCategory = (index: number) => {
-    form.setFieldValue(
-      "skills",
-      form.values.skills.filter((_, i) => i !== index)
-    );
-  };
-
-  const addPublication = () => {
-    const newPub: Publication = {
-      id: `pub_${Date.now()}`,
-      title: "",
-      authors: "",
-      conferenceOrJournal: "",
-      date: "",
-      url: "",
-    };
-    form.setFieldValue("publications", [...form.values.publications, newPub]);
-  };
-
-  const updatePublicationField = (
-    index: number,
-    field: keyof Publication,
-    value: string
-  ) => {
-    const updated = [...form.values.publications];
-    updated[index] = { ...updated[index], [field]: value };
-    form.setFieldValue("publications", updated);
-  };
-
-  const removePublication = async (index: number) => {
-    const pubToRemove = form.values.publications[index];
-    if (pubToRemove.id && !pubToRemove.id.startsWith("pub_")) {
-      await deletePublication(pubToRemove.id);
+    if (hasUnsavedChanges && editingItemId !== null) {
+      notifications.show({
+        title: "Unsaved Changes",
+        message:
+          "Please finish editing the current item before adding a new one.",
+        color: "orange",
+      });
+      return;
     }
-    form.setFieldValue(
-      "publications",
-      form.values.publications.filter((_, i) => i !== index)
-    );
+
+    let newItem: CVSectionItem;
+
+    switch (sectionType) {
+      case "education":
+        newItem = {
+          id: `edu_${Date.now()}`,
+          degree: "",
+          institution: "",
+          location: "",
+          graduationDate: "",
+          details: [],
+        } as Education;
+        break;
+      case "work_experience":
+        newItem = {
+          id: `work_${Date.now()}`,
+          jobTitle: "",
+          company: "",
+          location: "",
+          startDate: "",
+          endDate: "",
+          responsibilities: [],
+          technologiesUsed: [],
+        } as WorkExperience;
+        break;
+      case "skills":
+        newItem = {
+          category: "",
+          items: [],
+        } as SkillCategory;
+        break;
+      case "publications":
+        newItem = {
+          id: `pub_${Date.now()}`,
+          title: "",
+          authors: "",
+          conferenceOrJournal: "",
+          date: "",
+          url: "",
+        } as Publication;
+        break;
+      case "awards":
+        newItem = {
+          id: `award_${Date.now()}`,
+          name: "",
+          issuer: "",
+          date: "",
+          description: "",
+        } as Award;
+        break;
+      case "certifications":
+        newItem = {
+          id: `cert_${Date.now()}`,
+          name: "",
+          issuer: "",
+          date: "",
+          expirationDate: "",
+          credentialId: "",
+          credentialUrl: "",
+        } as Certification;
+        break;
+      case "volunteering":
+        newItem = {
+          id: `vol_${Date.now()}`,
+          organization: "",
+          role: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+          location: "",
+        } as VolunteerExperience;
+        break;
+      case "languages":
+        newItem = {
+          id: `lang_${Date.now()}`,
+          language: "",
+          proficiency: "Intermediate",
+          proofUrl: "",
+        } as Language;
+        break;
+      case "custom":
+        newItem = {
+          id: `custom_${Date.now()}`,
+          title: "",
+          subtitle: "",
+          date: "",
+          description: "",
+          details: [],
+        } as CustomCVItem;
+        break;
+      default:
+        return;
+    }
+
+    const sections = [...form.values.cvSections];
+    sections[sectionIndex].items.push(newItem);
+    form.setFieldValue("cvSections", sections);
+
+    // Auto-focus on the first input of the new item
+    const itemIndex = sections[sectionIndex].items.length - 1;
+    focusFirstInput(sectionIndex, itemIndex);
+
+    notifications.show({
+      title: "Item Added",
+      message: "New item added successfully!",
+      color: "green",
+    });
   };
 
-  // Project management functions
-  const toggleProjectSelection = (projectSlug: UUID) => {
-    const currentProjects = form.values.projects;
-    const isSelected = currentProjects.includes(projectSlug);
+  const deleteItemFromSection = (
+    sectionIndex: number,
+    itemIndex: number,
+    item: CVSectionItem
+  ) => {
+    let itemTitle = "";
 
-    if (isSelected) {
-      form.setFieldValue(
-        "projects",
-        currentProjects.filter((slug) => slug !== projectSlug)
-      );
+    if (isCVEducationItem(item)) {
+      itemTitle = item.degree || `Education Entry #${itemIndex + 1}`;
+    } else if (isCVWorkExperienceItem(item)) {
+      itemTitle = item.jobTitle || `Work Experience #${itemIndex + 1}`;
+    } else if (isCVSkillCategoryItem(item)) {
+      itemTitle = item.category || `Skill Category #${itemIndex + 1}`;
+    } else if (isCVPublicationItem(item)) {
+      itemTitle = item.title || `Publication #${itemIndex + 1}`;
+    } else if (isCVAwardItem(item)) {
+      itemTitle = item.name || `Award #${itemIndex + 1}`;
     } else {
-      form.setFieldValue("projects", [...currentProjects, projectSlug]);
+      itemTitle = `Item #${itemIndex + 1}`;
     }
+
+    const section = form.values.cvSections[sectionIndex];
+
+    handleDeleteConfirmation(
+      "sectionItem",
+      { sectionIndex, itemIndex, item },
+      "Delete Item",
+      `Are you sure you want to delete "${itemTitle}" from the ${section.title} section?`,
+      () => {
+        const sections = [...form.values.cvSections];
+        sections[sectionIndex].items = sections[sectionIndex].items.filter(
+          (_, i) => i !== itemIndex
+        );
+        form.setFieldValue("cvSections", sections);
+
+        // Clear editing state if this item was being edited
+        if (editingItemId === `${sectionIndex}-${itemIndex}`) {
+          setEditingItemId(null);
+        }
+
+        notifications.show({
+          title: "Success",
+          message: "Item deleted successfully!",
+          color: "green",
+        });
+      }
+    );
   };
 
-  const addAward = () => {
-    const newAward: Award = {
-      id: `award_${Date.now()}`,
-      name: "",
-      issuer: "",
-      date: "",
-      description: "",
-    };
-    form.setFieldValue("awards", [...form.values.awards, newAward]);
-  };
-
-  const updateAwardField = (
-    index: number,
-    field: keyof Award,
-    value: string
+  // Render item based on type
+  const renderSectionItem = (
+    section: CVSection,
+    item: CVSectionItem,
+    itemIndex: number,
+    sectionIndex: number
   ) => {
-    const updated = [...form.values.awards];
-    updated[index] = { ...updated[index], [field]: value };
-    form.setFieldValue("awards", updated);
-  };
+    const itemId =
+      "id" in item
+        ? item.id
+        : "slug" in item
+          ? item.slug
+          : "category" in item
+            ? item.category
+            : "";
 
-  const removeAward = async (index: number) => {
-    const awardToRemove = form.values.awards[index];
-    if (awardToRemove.id && !awardToRemove.id.startsWith("award_")) {
-      await deleteAward(awardToRemove.id);
+    if (isCVEducationItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Education #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Degree"
+                placeholder="Bachelor of Science"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.degree`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Graduation Date"
+                placeholder="May 2024"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.graduationDate`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Institution"
+                placeholder="University Name"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.institution`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Location"
+                placeholder="City, Country"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.location`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <TagsInput
+              label="Details"
+              placeholder="Type achievement and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.details`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+          </Stack>
+        </Card>
+      );
     }
-    form.setFieldValue(
-      "awards",
-      form.values.awards.filter((_, i) => i !== index)
+
+    if (isCVWorkExperienceItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Experience #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Job Title"
+                placeholder="Software Developer"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.jobTitle`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Company"
+                placeholder="Company Name"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.company`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Location"
+                placeholder="City, Country"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.location`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+              <TextInput
+                label="Company URL"
+                placeholder="https://company.com"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.companyUrl`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Start Date"
+                placeholder="Jan 2023"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.startDate`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+              <TextInput
+                label="End Date"
+                placeholder="Present"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.endDate`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <TagsInput
+              label="Responsibilities"
+              placeholder="Type responsibility and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.responsibilities`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+            <TagsInput
+              label="Technologies Used"
+              placeholder="Type technology and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.technologiesUsed`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVSkillCategoryItem(item)) {
+      return (
+        <Card
+          key={item.category}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Skill Category #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <TextInput
+              label="Category"
+              placeholder="Programming Languages"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.category`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              required
+            />
+            <TagsInput
+              label="Skills"
+              placeholder="Type a skill and press Enter"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.items`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              data={[]}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVPublicationItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Publication #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <TextInput
+              label="Title"
+              placeholder="Publication Title"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.title`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+              required
+            />
+            <Group grow>
+              <TextInput
+                label="Authors"
+                placeholder="Author 1, Author 2, et al."
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.authors`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+              <TextInput
+                label="Date"
+                placeholder="2024"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.date`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Conference/Journal"
+                placeholder="Journal Name"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.conferenceOrJournal`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+              <TextInput
+                label="URL"
+                placeholder="https://doi.org/..."
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.url`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVAwardItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Award #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Name"
+                placeholder="Award Title"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.name`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+                required
+              />
+              <TextInput
+                label="Issuer"
+                placeholder="Organization/Institution"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.issuer`
+                )}
+                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+                onBlur={() => setEditingItemId(null)}
+              />
+            </Group>
+            <TextInput
+              label="Date"
+              placeholder="2024"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.date`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+            <Textarea
+              label="Description"
+              placeholder="Description of the award or achievement..."
+              rows={3}
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.description`
+              )}
+              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
+              onBlur={() => setEditingItemId(null)}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    // Default fallback for other types
+    return (
+      <Card
+        key={itemId}
+        padding="md"
+        radius="md"
+        withBorder
+        data-section={sectionIndex}
+        data-item={itemIndex}
+      >
+        <Group justify="space-between" align="flex-start" mb="md">
+          <Text fw={500} size="sm" c="dimmed">
+            Item #{itemIndex + 1}
+          </Text>
+          <Button
+            variant="light"
+            color="red"
+            size="xs"
+            leftSection={<DeleteOutlined />}
+            onClick={() => deleteItemFromSection(sectionIndex, itemIndex, item)}
+          >
+            Delete
+          </Button>
+        </Group>
+        <Text size="sm">Custom item (editing not yet implemented)</Text>
+      </Card>
     );
   };
 
   return (
     <>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        opened={deleteModalOpened}
+        onClose={closeDeleteModal}
+        title={deleteTarget?.title || "Confirm Delete"}
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">{deleteTarget?.message}</Text>
+          <Text size="xs" c="dimmed">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="light" onClick={closeDeleteModal}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              onClick={confirmDelete}
+              leftSection={<DeleteOutlined />}
+            >
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       <form onSubmit={form.onSubmit(handleSave)}>
         <Grid>
           {/* Left Column - Basic Info */}
@@ -536,6 +1330,7 @@ export function ProfileEditForm({
                 </Stack>
               </Stack>
               <Divider />
+
               {/* Social Links */}
               <Stack gap="lg">
                 <Group justify="space-between">
@@ -618,13 +1413,15 @@ export function ProfileEditForm({
                             />
                           </Stack>
 
-                          <ActionIcon
-                            color="red"
+                          <Button
                             variant="light"
+                            color="red"
+                            size="xs"
+                            leftSection={<DeleteOutlined />}
                             onClick={() => removeSocialLink(index)}
                           >
-                            <DeleteOutlined />
-                          </ActionIcon>
+                            Delete
+                          </Button>
                         </Group>
                       </Card>
                     );
@@ -704,463 +1501,7 @@ export function ProfileEditForm({
 
               <Divider />
 
-              {/* Education */}
-              <Stack gap="lg">
-                <Group justify="space-between">
-                  <Group>
-                    <ThemeIcon variant="light" size="lg">
-                      <BookOutlined />
-                    </ThemeIcon>
-                    <Title order={2} size="h3">
-                      Education
-                    </Title>
-                  </Group>
-
-                  <Button
-                    leftSection={<PlusOutlined />}
-                    variant="light"
-                    onClick={addEducation}
-                    size="sm"
-                  >
-                    Add Education
-                  </Button>
-                </Group>
-
-                <Stack gap="md">
-                  {form.values.education.map((edu, index) => (
-                    <Card
-                      key={edu.id || index}
-                      padding="md"
-                      radius="md"
-                      withBorder
-                    >
-                      <Group justify="space-between" align="flex-start" mb="md">
-                        <Text fw={500} size="sm" c="dimmed">
-                          Education Entry #{index + 1}
-                        </Text>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => removeEducation(index)}
-                        >
-                          <DeleteOutlined />
-                        </ActionIcon>
-                      </Group>
-
-                      <Stack gap="xs">
-                        <Group grow>
-                          <TextInput
-                            label="Institution"
-                            placeholder="University Name"
-                            value={edu.institution}
-                            onChange={(e) =>
-                              updateEducationField(
-                                index,
-                                "institution",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <TextInput
-                            label="Degree"
-                            placeholder="Bachelor of Science"
-                            value={edu.degree}
-                            onChange={(e) =>
-                              updateEducationField(
-                                index,
-                                "degree",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Group>
-
-                        <Group grow>
-                          <TextInput
-                            label="Location"
-                            placeholder="City, Country"
-                            value={edu.location}
-                            onChange={(e) =>
-                              updateEducationField(
-                                index,
-                                "location",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <TextInput
-                            label="Graduation Date"
-                            placeholder="May 2024"
-                            value={edu.graduationDate}
-                            onChange={(e) =>
-                              updateEducationField(
-                                index,
-                                "graduationDate",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Group>
-
-                        <TagsInput
-                          label="Details"
-                          placeholder="Type achievement and press Enter"
-                          value={edu.details || []}
-                          onChange={(value) =>
-                            updateEducationField(index, "details", value)
-                          }
-                          data={[]}
-                        />
-                      </Stack>
-                    </Card>
-                  ))}
-
-                  {form.values.education.length === 0 && (
-                    <Text c="dimmed" ta="center" py="xl">
-                      No education entries added yet. Click &quot;Add
-                      Education&quot; to get started.
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Work Experience */}
-              <Stack gap="lg">
-                <Group justify="space-between">
-                  <Group>
-                    <ThemeIcon variant="light" size="lg">
-                      <CarryOutOutlined />
-                    </ThemeIcon>
-                    <Title order={2} size="h3">
-                      Work Experience
-                    </Title>
-                  </Group>
-
-                  <Button
-                    leftSection={<PlusOutlined />}
-                    variant="light"
-                    onClick={addWorkExperience}
-                    size="sm"
-                  >
-                    Add Experience
-                  </Button>
-                </Group>
-
-                <Stack gap="md">
-                  {form.values.workExperience.map((work, index) => (
-                    <Card
-                      key={work.id || index}
-                      padding="md"
-                      radius="md"
-                      withBorder
-                    >
-                      <Group justify="space-between" align="flex-start" mb="md">
-                        <Text fw={500} size="sm" c="dimmed">
-                          Experience #{index + 1}
-                        </Text>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => removeWorkExperience(index)}
-                        >
-                          <DeleteOutlined />
-                        </ActionIcon>
-                      </Group>
-
-                      <Stack gap="xs">
-                        <Group grow>
-                          <TextInput
-                            label="Company"
-                            placeholder="Company Name"
-                            value={work.company}
-                            onChange={(e) =>
-                              updateWorkField(index, "company", e.target.value)
-                            }
-                          />
-                          <TextInput
-                            label="Job Title"
-                            placeholder="Software Developer"
-                            value={work.jobTitle}
-                            onChange={(e) =>
-                              updateWorkField(index, "jobTitle", e.target.value)
-                            }
-                          />
-                        </Group>
-
-                        <Group grow>
-                          <TextInput
-                            label="Location"
-                            placeholder="City, Country"
-                            value={work.location}
-                            onChange={(e) =>
-                              updateWorkField(index, "location", e.target.value)
-                            }
-                          />
-                          <TextInput
-                            label="Company URL"
-                            placeholder="https://company.com"
-                            value={work.companyUrl || ""}
-                            onChange={(e) =>
-                              updateWorkField(
-                                index,
-                                "companyUrl",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Group>
-
-                        <Group grow>
-                          <TextInput
-                            label="Start Date"
-                            placeholder="Jan 2023"
-                            value={work.startDate}
-                            onChange={(e) =>
-                              updateWorkField(
-                                index,
-                                "startDate",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <TextInput
-                            label="End Date"
-                            placeholder="Present"
-                            value={work.endDate}
-                            onChange={(e) =>
-                              updateWorkField(index, "endDate", e.target.value)
-                            }
-                          />
-                        </Group>
-
-                        <TagsInput
-                          label="Responsibilities"
-                          placeholder="Type responsibility and press Enter"
-                          value={work.responsibilities}
-                          onChange={(value) =>
-                            updateWorkField(index, "responsibilities", value)
-                          }
-                          data={[]}
-                        />
-
-                        <TagsInput
-                          label="Technologies Used"
-                          placeholder="Type technology and press Enter"
-                          value={work.technologiesUsed || []}
-                          onChange={(value) =>
-                            updateWorkField(index, "technologiesUsed", value)
-                          }
-                          data={[]}
-                        />
-                      </Stack>
-                    </Card>
-                  ))}
-
-                  {form.values.workExperience.length === 0 && (
-                    <Text c="dimmed" ta="center" py="xl">
-                      No work experience added yet. Click &quot;Add
-                      Experience&quot; to get started.
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Skills */}
-              <Stack gap="lg">
-                <Group justify="space-between">
-                  <Group>
-                    <ThemeIcon variant="light" size="lg">
-                      <BulbOutlined />
-                    </ThemeIcon>
-                    <Title order={2} size="h3">
-                      Skills
-                    </Title>
-                  </Group>
-
-                  <Button
-                    leftSection={<PlusOutlined />}
-                    variant="light"
-                    onClick={addSkillCategory}
-                    size="sm"
-                  >
-                    Add Category
-                  </Button>
-                </Group>
-
-                <Stack gap="md">
-                  {form.values.skills.map((skillCat, index) => (
-                    <Card key={index} padding="md" radius="md" withBorder>
-                      <Group justify="space-between" align="flex-start" mb="md">
-                        <Text fw={500} size="sm" c="dimmed">
-                          Skill Category #{index + 1}
-                        </Text>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => removeSkillCategory(index)}
-                        >
-                          <DeleteOutlined />
-                        </ActionIcon>
-                      </Group>
-
-                      <Stack gap="xs">
-                        <TextInput
-                          label="Category"
-                          placeholder="Programming Languages"
-                          value={skillCat.category}
-                          onChange={(e) =>
-                            updateSkillCategory(
-                              index,
-                              "category",
-                              e.target.value
-                            )
-                          }
-                        />
-
-                        <TagsInput
-                          label="Skills"
-                          placeholder="Type a skill and press Enter"
-                          value={skillCat.items}
-                          onChange={(value) =>
-                            updateSkillCategory(index, "items", value)
-                          }
-                          data={[]}
-                        />
-                      </Stack>
-                    </Card>
-                  ))}
-
-                  {form.values.skills.length === 0 && (
-                    <Text c="dimmed" ta="center" py="xl">
-                      No skill categories added yet. Click &quot;Add
-                      Category&quot; to get started.
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Selected Projects */}
-              <Stack gap="lg">
-                <Group justify="space-between">
-                  <Group>
-                    <ThemeIcon variant="light" size="lg">
-                      <CarryOutOutlined />
-                    </ThemeIcon>
-                    <Title order={2} size="h3">
-                      Selected Projects
-                    </Title>
-                  </Group>
-                </Group>
-
-                <Text size="sm" c="dimmed" mb="md">
-                  Choose portfolio projects to include in your CV. Click on
-                  projects to toggle selection.
-                </Text>
-
-                <Stack gap="md">
-                  {portfolioProjects.length > 0 ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(300px, 1fr))",
-                        gap: "1rem",
-                      }}
-                    >
-                      {portfolioProjects.map((project) => {
-                        const isSelected = form.values.projects.includes(
-                          project.slug
-                        );
-                        return (
-                          <Card
-                            key={project.slug}
-                            padding="md"
-                            radius="md"
-                            withBorder
-                            style={{
-                              cursor: "pointer",
-                              backgroundColor: isSelected
-                                ? "var(--mantine-color-blue-0)"
-                                : undefined,
-                              borderColor: isSelected
-                                ? "var(--mantine-color-blue-4)"
-                                : undefined,
-                              borderWidth: isSelected ? "2px" : "1px",
-                            }}
-                            onClick={() => toggleProjectSelection(project.slug)}
-                          >
-                            <Group
-                              justify="space-between"
-                              align="flex-start"
-                              mb="xs"
-                            >
-                              <Text fw={500} size="sm" style={{ flex: 1 }}>
-                                {project.title}
-                              </Text>
-                              <Badge
-                                color={isSelected ? "blue" : "gray"}
-                                variant={isSelected ? "filled" : "light"}
-                                size="sm"
-                              >
-                                {isSelected ? "Selected" : "Not Selected"}
-                              </Badge>
-                            </Group>
-
-                            {project.subtitle && (
-                              <Text size="xs" c="dimmed" mb="xs">
-                                {project.subtitle}
-                              </Text>
-                            )}
-
-                            <Text size="xs" c="dimmed" mb="sm">
-                              {project.shortDescription}
-                            </Text>
-
-                            <Group gap="xs" mb="xs">
-                              <Text size="xs" c="dimmed">
-                                Date:
-                              </Text>
-                              <Text size="xs">{project.date}</Text>
-                            </Group>
-
-                            <Group gap="xs">
-                              <Text size="xs" c="dimmed">
-                                Status:
-                              </Text>
-                              <Badge size="xs" variant="outline">
-                                {project.status}
-                              </Badge>
-                            </Group>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <Text c="dimmed" ta="center" py="xl">
-                      No portfolio projects found. Add some projects to your
-                      portfolio first.
-                    </Text>
-                  )}
-
-                  {form.values.projects.length > 0 && (
-                    <Text size="sm" c="blue">
-                      {form.values.projects.length} project
-                      {form.values.projects.length === 1 ? "" : "s"} selected
-                      for CV
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Publications */}
+              {/* Dynamic CV Sections */}
               <Stack gap="lg">
                 <Group justify="space-between">
                   <Group>
@@ -1168,216 +1509,162 @@ export function ProfileEditForm({
                       <FileTextOutlined />
                     </ThemeIcon>
                     <Title order={2} size="h3">
-                      Publications
+                      CV Sections
                     </Title>
                   </Group>
 
-                  <Button
-                    leftSection={<PlusOutlined />}
-                    variant="light"
-                    onClick={addPublication}
-                    size="sm"
-                  >
-                    Add Publication
-                  </Button>
-                </Group>
-
-                <Stack gap="md">
-                  {form.values.publications.map((pub, index) => (
-                    <Card
-                      key={pub.id || index}
-                      padding="md"
-                      radius="md"
-                      withBorder
-                    >
-                      <Group justify="space-between" align="flex-start" mb="md">
-                        <Text fw={500} size="sm" c="dimmed">
-                          Publication #{index + 1}
-                        </Text>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => removePublication(index)}
-                        >
-                          <DeleteOutlined />
-                        </ActionIcon>
-                      </Group>
-
-                      <Stack gap="xs">
-                        <TextInput
-                          label="Title"
-                          placeholder="Publication Title"
-                          value={pub.title}
-                          onChange={(e) =>
-                            updatePublicationField(
-                              index,
-                              "title",
-                              e.target.value
-                            )
-                          }
-                        />
-
-                        <Group grow>
-                          <TextInput
-                            label="Authors"
-                            placeholder="Author 1, Author 2, et al."
-                            value={pub.authors || ""}
-                            onChange={(e) =>
-                              updatePublicationField(
-                                index,
-                                "authors",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <TextInput
-                            label="Date"
-                            placeholder="2024"
-                            value={pub.date}
-                            onChange={(e) =>
-                              updatePublicationField(
-                                index,
-                                "date",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Group>
-
-                        <Group grow>
-                          <TextInput
-                            label="Conference/Journal"
-                            placeholder="Journal Name"
-                            value={pub.conferenceOrJournal || ""}
-                            onChange={(e) =>
-                              updatePublicationField(
-                                index,
-                                "conferenceOrJournal",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <TextInput
-                            label="URL"
-                            placeholder="https://doi.org/..."
-                            value={pub.url || ""}
-                            onChange={(e) =>
-                              updatePublicationField(
-                                index,
-                                "url",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Group>
-                      </Stack>
-                    </Card>
-                  ))}
-
-                  {form.values.publications.length === 0 && (
-                    <Text c="dimmed" ta="center" py="xl">
-                      No publications added yet. Click &quot;Add
-                      Publication&quot; to get started.
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Awards & Honors */}
-              <Stack gap="lg">
-                <Group justify="space-between">
                   <Group>
-                    <ThemeIcon variant="light" size="lg">
-                      <TrophyOutlined />
-                    </ThemeIcon>
-                    <Title order={2} size="h3">
-                      Awards &amp; Honors
-                    </Title>
-                  </Group>
+                    <Select
+                      placeholder="Select section type"
+                      value={selectedSectionType}
+                      onChange={(value) =>
+                        setSelectedSectionType(value as CVSectionType)
+                      }
+                      data={SECTION_TYPES.filter((type) => {
+                        // Allow custom sections (multiple instances allowed)
+                        if (type.value === "custom") return true;
 
-                  <Button
-                    leftSection={<PlusOutlined />}
-                    variant="light"
-                    onClick={addAward}
-                    size="sm"
-                  >
-                    Add Award
-                  </Button>
+                        // For other types, only show if they don't already exist
+                        return !form.values.cvSections.some(
+                          (section) => section.type === type.value
+                        );
+                      }).map((type) => ({
+                        value: type.value,
+                        label: type.label,
+                      }))}
+                      size="sm"
+                      style={{ minWidth: 200 }}
+                    />
+                    <Button
+                      leftSection={<PlusOutlined />}
+                      variant="light"
+                      onClick={addNewSection}
+                      size="sm"
+                      disabled={
+                        hasUnsavedChanges ||
+                        SECTION_TYPES.filter((type) => {
+                          // Allow custom sections (multiple instances allowed)
+                          if (type.value === "custom") return true;
+
+                          // For other types, only show if they don't already exist
+                          return !form.values.cvSections.some(
+                            (section) => section.type === type.value
+                          );
+                        }).length === 0
+                      }
+                    >
+                      Add Section
+                    </Button>
+                  </Group>
                 </Group>
 
-                <Stack gap="md">
-                  {form.values.awards.map((award, index) => (
-                    <Card
-                      key={award.id || index}
-                      padding="md"
-                      radius="md"
-                      withBorder
-                    >
-                      <Group justify="space-between" align="flex-start" mb="md">
-                        <Text fw={500} size="sm" c="dimmed">
-                          Award #{index + 1}
-                        </Text>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => removeAward(index)}
-                        >
-                          <DeleteOutlined />
-                        </ActionIcon>
-                      </Group>
+                <Stack gap="xl">
+                  {form.values.cvSections
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((section, sectionIndex) => {
+                      const sectionTypeInfo = SECTION_TYPES.find(
+                        (t) => t.value === section.type
+                      );
+                      const SectionIcon =
+                        sectionTypeInfo?.icon || FileTextOutlined;
 
-                      <Stack gap="xs">
-                        <Group grow>
-                          <TextInput
-                            label="Name"
-                            placeholder="Award Title"
-                            value={award.name}
-                            onChange={(e) =>
-                              updateAwardField(index, "name", e.target.value)
-                            }
-                          />
-                          <TextInput
-                            label="Issuer"
-                            placeholder="Organization/Institution"
-                            value={award.issuer || ""}
-                            onChange={(e) =>
-                              updateAwardField(index, "issuer", e.target.value)
-                            }
-                          />
-                        </Group>
+                      return (
+                        <Paper key={section.id} p="lg" withBorder radius="md">
+                          {/* Section Header */}
+                          <Group justify="space-between" mb="lg">
+                            <Group>
+                              <ThemeIcon
+                                variant="light"
+                                size="lg"
+                                color={section.isVisible ? "blue" : "gray"}
+                              >
+                                <SectionIcon />
+                              </ThemeIcon>
+                              <Stack gap={0}>
+                                <Title order={3} size="h4">
+                                  {section.title}
+                                </Title>
+                                <Text size="xs" c="dimmed">
+                                  {section.items.length} item
+                                  {section.items.length !== 1 ? "s" : ""}
+                                </Text>
+                              </Stack>
+                            </Group>
 
-                        <TextInput
-                          label="Date"
-                          placeholder="2024"
-                          value={award.date}
-                          onChange={(e) =>
-                            updateAwardField(index, "date", e.target.value)
-                          }
-                        />
+                            <Group gap="xs">
+                              <ActionIcon
+                                variant="light"
+                                color={section.isVisible ? "blue" : "gray"}
+                                onClick={() =>
+                                  toggleSectionVisibility(sectionIndex)
+                                }
+                                title={
+                                  section.isVisible
+                                    ? "Hide section"
+                                    : "Show section"
+                                }
+                              >
+                                {section.isVisible ? (
+                                  <EyeOutlined />
+                                ) : (
+                                  <EyeInvisibleOutlined />
+                                )}
+                              </ActionIcon>
 
-                        <Textarea
-                          label="Description"
-                          placeholder="Description of the award or achievement..."
-                          rows={3}
-                          value={award.description || ""}
-                          onChange={(e) =>
-                            updateAwardField(
-                              index,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </Stack>
-                    </Card>
-                  ))}
+                              <Button
+                                leftSection={<PlusOutlined />}
+                                variant="light"
+                                size="xs"
+                                onClick={() =>
+                                  addItemToSection(sectionIndex, section.type)
+                                }
+                                disabled={
+                                  hasUnsavedChanges && editingItemId !== null
+                                }
+                              >
+                                Add Item
+                              </Button>
 
-                  {form.values.awards.length === 0 && (
+                              <Button
+                                variant="light"
+                                color="red"
+                                size="xs"
+                                leftSection={<DeleteOutlined />}
+                                onClick={() =>
+                                  deleteSection(sectionIndex, section)
+                                }
+                              >
+                                Delete Section
+                              </Button>
+                            </Group>
+                          </Group>
+
+                          {/* Section Items */}
+                          {section.items.length > 0 ? (
+                            <Stack gap="md">
+                              {section.items.map((item, itemIndex) =>
+                                renderSectionItem(
+                                  section,
+                                  item,
+                                  itemIndex,
+                                  sectionIndex
+                                )
+                              )}
+                            </Stack>
+                          ) : (
+                            <Text c="dimmed" ta="center" py="xl">
+                              No items in this section yet. Click &quot;Add
+                              Item&quot; to get started.
+                            </Text>
+                          )}
+                        </Paper>
+                      );
+                    })}
+
+                  {form.values.cvSections.length === 0 && (
                     <Text c="dimmed" ta="center" py="xl">
-                      No awards added yet. Click &quot;Add Award&quot; to get
-                      started.
+                      No CV sections added yet. Select a section type and click
+                      &quot;Add Section&quot; to get started.
                     </Text>
                   )}
                 </Stack>

@@ -29,7 +29,7 @@ export interface UserProfile {
 // ========================================
 
 export interface Settings {
-  publicResumeId?: UUID; // References an ID from the 'resumes' array
+  publicResumeId?: UUID;
   availableTechnologies: string[];
   availableRoles: string[];
 }
@@ -42,7 +42,7 @@ export interface CallToAction {
   id: UUID;
   text: string;
   url: string;
-  style?: string; // e.g., "primary", "secondary"
+  style?: string;
 }
 
 export interface LandingPage {
@@ -50,7 +50,7 @@ export interface LandingPage {
   mainHeadline: string;
   introductionParagraphs: string[];
   callToActions: CallToAction[];
-  featuredProjectIds: UUID[]; // Array of UUIDs referencing portfolio.projects
+  featuredProjectIds: UUID[];
 }
 
 // ========================================
@@ -101,7 +101,8 @@ export interface Education {
   degree: string;
   institution: string;
   location: string;
-  graduationDate: string;
+  graduationDate?: string;
+  current?: boolean;
   details?: string[];
 }
 
@@ -112,7 +113,8 @@ export interface WorkExperience {
   companyUrl?: string;
   location: string;
   startDate: string;
-  endDate: string; // Or "Present"
+  current?: boolean;
+  endDate?: string;
   responsibilities: string[];
   technologiesUsed?: string[];
 }
@@ -139,68 +141,85 @@ export interface Award {
   description?: string;
 }
 
-export interface CV {
-  title?: string; 
-  contactInformation: ContactInformation;
-  summary: string;
-  education: Education[];
-  workExperience: WorkExperience[];
-  skills: SkillCategory[];
-  projects?: UUID[];
-  publications?: Publication[];
-  awardsAndHonors?: Award[];
-}
-
 // ========================================
-// Resume Types
+// CV Dynamic Section Types
 // ========================================
 
-export type ResumeSectionType = "experience" | "projects" | "skills_list" | "education";
+export type CVSectionType = 
+  | "education" 
+  | "work_experience" 
+  | "skills" 
+  | "projects" 
+  | "publications" 
+  | "awards" 
+  | "certifications"
+  | "volunteering"
+  | "languages"
+  | "custom";
 
-// Resume section item types vary by section type
-export interface ResumeExperienceItem {
-  jobTitle: string;
-  company: string;
-  date: string;
-  achievements: string[];
-  relatedPortfolioProjectIds?: UUID[];
-}
+// CV section item types vary by section type
+export type CVSectionItem = 
+  | Education
+  | WorkExperience
+  | SkillCategory
+  | Publication
+  | Award
+  | Project
+  | Certification
+  | VolunteerExperience
+  | Language
+  | CustomCVItem;
 
-export interface ResumeProjectItem {
-  portfolioProjectId: UUID; // References portfolio.projects.id
-  customTitle?: string;
-  resumeSpecificDescription?: string;
-  technologiesUsed?: string[];
-}
-
-export interface ResumeEducationItem {
-  degree: string;
-  institution: string;
-  graduationYear: string;
-  relevantCoursework?: string;
-}
-
-// Union type for resume section items
-export type ResumeSectionItem = 
-  | ResumeExperienceItem 
-  | ResumeProjectItem 
-  | ResumeEducationItem 
-  | string; // For skills_list type
-
-export interface ResumeSection {
+export interface CVSection {
   id: UUID;
   title: string;
-  type: ResumeSectionType;
-  items: ResumeSectionItem[];
+  type: CVSectionType;
+  items: CVSectionItem[];
+  isVisible: boolean;
+  sortOrder: number;
 }
 
-export interface Resume {
+export interface Certification {
   id: UUID;
-  nameForUser: string; // Internal name for local builder UI
-  publicTitle: string; // Title displayed on this resume
+  name: string;
+  issuer: string;
+  date: string;
+  expirationDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+}
+
+export interface VolunteerExperience {
+  id: UUID;
+  organization: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  location?: string;
+}
+
+export interface Language {
+  id: UUID;
+  language: string;
+  proofUrl?: string;
+  proficiency: "Native" | "Fluent" | "Intermediate" | "Basic";
+}
+
+export interface CustomCVItem {
+  id: UUID;
+  title: string;
+  subtitle?: string;
+  date?: string;
+  description?: string;
+  details?: string[];
+}
+
+export interface CV {
+  title?: string;
   contactInformation: ContactInformation;
   summary: string;
-  sections: ResumeSection[];
+  sections: CVSection[];
 }
 
 // ========================================
@@ -213,27 +232,6 @@ export interface PortfolioData {
   landingPage: LandingPage;
   portfolio: Portfolio;
   cv: CV;
-  resumes: Resume[];
-}
-
-// ========================================
-// Type Guards for Resume Section Items
-// ========================================
-
-export function isResumeExperienceItem(item: ResumeSectionItem): item is ResumeExperienceItem {
-  return typeof item === 'object' && 'jobTitle' in item && 'company' in item && 'achievements' in item;
-}
-
-export function isResumeProjectItem(item: ResumeSectionItem): item is ResumeProjectItem {
-  return typeof item === 'object' && 'portfolioProjectId' in item;
-}
-
-export function isResumeEducationItem(item: ResumeSectionItem): item is ResumeEducationItem {
-  return typeof item === 'object' && 'degree' in item && 'institution' in item && 'graduationYear' in item;
-}
-
-export function isSkillItem(item: ResumeSectionItem): item is string {
-  return typeof item === 'string';
 }
 
 // ========================================
@@ -243,14 +241,36 @@ export function isSkillItem(item: ResumeSectionItem): item is string {
 // Type for finding a project by ID
 export type ProjectLookup = { [key: UUID]: Project };
 
-// Type for finding a resume by ID
-export type ResumeLookup = { [key: UUID]: Resume };
-
 // Type for portfolio sort orders
 export type SortOrder = "date_asc" | "date_desc" | "title_asc" | "title_desc";
 
 // Type for project status
 export type ProjectStatus = "Completed" | "In Progress" | "Planned" | "On Hold";
 
-// Type for CTA styles
-export type CTAStyle = "primary" | "secondary" | "tertiary";
+export function isCVEducationItem(item: CVSectionItem): item is Education {
+  return typeof item === 'object' && 'degree' in item && 'institution' in item;
+}
+
+export function isCVWorkExperienceItem(item: CVSectionItem): item is WorkExperience {
+  return typeof item === 'object' && 'jobTitle' in item && 'company' in item && 'responsibilities' in item;
+}
+
+export function isCVSkillCategoryItem(item: CVSectionItem): item is SkillCategory {
+  return typeof item === 'object' && 'category' in item && 'items' in item;
+}
+
+export function isCVPublicationItem(item: CVSectionItem): item is Publication {
+  return typeof item === 'object' && 'title' in item && 'authors' in item;
+}
+
+export function isCVAwardItem(item: CVSectionItem): item is Award {
+  return typeof item === 'object' && 'name' in item && 'issuer' in item;
+}
+
+export function isCVCertificationItem(item: CVSectionItem): item is Certification {
+  return typeof item === 'object' && 'name' in item && 'issuer' in item && 'date' in item;
+}
+
+export function isCVCustomItem(item: CVSectionItem): item is CustomCVItem {
+  return typeof item === 'object' && 'title' in item && !('degree' in item) && !('jobTitle' in item);
+}
