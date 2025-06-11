@@ -8,8 +8,20 @@ import { notFound } from "next/navigation";
 export default async function ProfileEditPage() {
   const [userProfile, cvData] = await Promise.all([
     fetchUserProfile(),
-    fetchCV()
+    fetchCV(),
   ]);
+
+  // Legacy CV data migration
+  // Check if migration is needed
+  // if (!cvData.sections || !Array.isArray(cvData.sections)) {
+  //   try {
+  //     await migrateCVToSections();
+  //     // Fetch the updated CV data after migration
+  //     cvData = await fetchCV();
+  //   } catch (error) {
+  //     console.error("Migration failed:", error);
+  //   }
+  // }
 
   if (!isAppDevMode()) {
     return notFound();
@@ -17,7 +29,10 @@ export default async function ProfileEditPage() {
 
   return (
     <Container size="lg" py="xl">
-      <ProfileEditForm initialProfile={userProfile} initialCV={cvData} />
+      <ProfileEditForm 
+        initialProfile={userProfile} 
+        initialCV={cvData} 
+      />
     </Container>
   );
 }

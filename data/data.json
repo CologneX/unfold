@@ -6,7 +6,7 @@
     "phone": "+1234567890",
     "location": "City, Country",
     "websiteUrl": "https://yourdomain.com",
-    "profilePictureUrl": "/images/uploads/1748750621146-ADA_Memoji.png",
+    "profilePictureUrl": "",
     "socialLinks": [
       {
         "id": "social_linkedin",
@@ -27,113 +27,157 @@
     "cvPhone": "+1234567890",
     "cvLinkedinUrl": "https://www.linkedin.com/in/yourprofile/",
     "cvPortfolioUrl": "https://yourdomain.com",
-    "education": [
+    "cvSections": [
       {
-        "id": "edu_masters",
-        "degree": "Master of Science in Computer Science",
-        "institution": "University of Technology",
-        "location": "City, Country",
-        "graduationDate": "May 2020",
-        "details": [
-          "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
-          "GPA: 3.9/4.0, Dean's List."
-        ]
-      }
-    ],
-    "workExperience": [
-      {
-        "id": "work_current_job",
-        "jobTitle": "Senior Software Engineer",
-        "company": "Tech Solutions Inc.",
-        "companyUrl": "https://techsolutions.example.com",
-        "location": "City, Country",
-        "startDate": "June 2022",
-        "endDate": "Present",
-        "responsibilities": [
-          "Led the development of [Project X], resulting in a 20% increase in user engagement.",
-          "Mentored junior developers and conducted code reviews.",
-          "Collaborated with product managers to define project requirements and timelines."
+        "id": "ee253987-5545-4d23-a53e-b1e93c314f72",
+        "title": "Education",
+        "type": "education",
+        "items": [
+          {
+            "id": "edu_masters",
+            "degree": "Master of Science in Computer Science",
+            "institution": "University of Technology",
+            "location": "City, Country",
+            "graduationDate": "May 2020",
+            "details": [
+              "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
+              "GPA: 3.9/4.0, Dean's List."
+            ]
+          }
         ],
-        "technologiesUsed": [
-          "Java",
-          "Spring Boot",
-          "AWS",
-          "Microservices"
-        ]
-      }
-    ],
-    "skills": [
-      {
-        "category": "Programming Languages",
-        "items": [
-          "JavaScript (ESNext)",
-          "Python",
-          "Java",
-          "C++",
-          "SQL"
-        ]
+        "isVisible": true,
+        "sortOrder": 0
       },
       {
-        "category": "Frameworks & Libraries",
+        "id": "de321d7a-26c7-4513-a038-51b9b15b7b6c",
+        "title": "Professional Experience",
+        "type": "work_experience",
         "items": [
-          "React",
-          "Next.js",
-          "Node.js",
-          "Express",
-          "Spring Boot",
-          "Django"
-        ]
+          {
+            "id": "work_current_job",
+            "jobTitle": "Senior Software Engineer",
+            "company": "Tech Solutions Inc.",
+            "companyUrl": "https://techsolutions.example.com",
+            "location": "City, Country",
+            "startDate": "June 2022",
+            "endDate": "Present",
+            "responsibilities": [
+              "Led the development of [Project X], resulting in a 20% increase in user engagement.",
+              "Mentored junior developers and conducted code reviews.",
+              "Collaborated with product managers to define project requirements and timelines."
+            ],
+            "technologiesUsed": [
+              "Java",
+              "Spring Boot",
+              "AWS",
+              "Microservices"
+            ]
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 1
       },
       {
-        "category": "Databases",
+        "id": "d40fe370-61ec-4e41-8ba7-f8d59ff1444d",
+        "title": "Skills & Expertise",
+        "type": "skills",
         "items": [
-          "PostgreSQL",
-          "MongoDB",
-          "MySQL",
-          "Redis"
-        ]
+          {
+            "category": "Programming Languages",
+            "items": [
+              "JavaScript (ESNext)",
+              "Python",
+              "Java",
+              "C++",
+              "SQL"
+            ]
+          },
+          {
+            "category": "Frameworks & Libraries",
+            "items": [
+              "React",
+              "Next.js",
+              "Node.js",
+              "Express",
+              "Spring Boot",
+              "Django"
+            ]
+          },
+          {
+            "category": "Databases",
+            "items": [
+              "PostgreSQL",
+              "MongoDB",
+              "MySQL",
+              "Redis"
+            ]
+          },
+          {
+            "category": "Tools & Platforms",
+            "items": [
+              "Git",
+              "Docker",
+              "Kubernetes",
+              "AWS",
+              "Azure",
+              "Jenkins"
+            ]
+          },
+          {
+            "category": "Languages",
+            "items": [
+              "English (Native)",
+              "Spanish (Proficient)"
+            ]
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 2
       },
       {
-        "category": "Tools & Platforms",
+        "id": "04d146f6-ca20-40c4-91c6-3910b4cdcd9d",
+        "title": "Publications",
+        "type": "publications",
         "items": [
-          "Git",
-          "Docker",
-          "Kubernetes",
-          "AWS",
-          "Azure",
-          "Jenkins",
-          "JIRA"
-        ]
+          {
+            "id": "pub_ai_paper",
+            "title": "A Novel Approach to Machine Learning Model Optimization",
+            "authors": "Your Name, Co-author Name",
+            "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
+            "date": "October 2023",
+            "url": "https://doi.org/your-paper-link"
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 3
       },
       {
-        "category": "Languages",
-        "items": [
-          "English (Native)",
-          "Spanish (Proficient)"
-        ]
-      }
-    ],
-    "publications": [
+        "title": "Professional Experience",
+        "type": "work_experience",
+        "items": [],
+        "isVisible": true,
+        "id": "5a8671a6-4640-4758-ab7a-0ce0e2c2da10",
+        "sortOrder": 4
+      },
       {
-        "id": "pub_ai_paper",
-        "title": "A Novel Approach to Machine Learning Model Optimization",
-        "authors": "Your Name, Co-author Name",
-        "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
-        "date": "October 2023",
-        "url": "https://doi.org/your-paper-link"
-      }
-    ],
-    "awards": [
+        "id": "section_1749582858905",
+        "title": "Certifications",
+        "type": "certifications",
+        "items": [],
+        "isVisible": true,
+        "sortOrder": 5
+      },
       {
-        "id": "award_hackathon",
-        "name": "Best Innovation Award - Tech Hackathon 2022",
-        "issuer": "Tech Hackathon Organizers",
-        "date": "March 2022"
+        "id": "section_1749582986724",
+        "title": "Awards & Honors",
+        "type": "awards",
+        "items": [],
+        "isVisible": false,
+        "sortOrder": 6
       }
     ]
   },
   "settings": {
-    "publicResumeId": "resume_web_dev_2025",
     "availableTechnologies": [
       "AWS",
       "Angular",
@@ -174,31 +218,6 @@
       "UI/UX Designer"
     ]
   },
-  "landingPage": {
-    "greeting": "Hello there!",
-    "mainHeadline": "I'm [Your Name], a [Your Role] passionate about creating impactful digital experiences.",
-    "introductionParagraphs": [
-      "This is the first paragraph of my introduction. I love to code and build amazing things.",
-      "My journey in tech started when... and I've been hooked ever since."
-    ],
-    "callToActions": [
-      {
-        "id": "cta_portfolio",
-        "text": "View My Work",
-        "url": "/portfolio",
-        "style": "primary"
-      },
-      {
-        "id": "cta_contact",
-        "text": "Get In Touch",
-        "url": "mailto:your.email@example.com",
-        "style": "secondary"
-      }
-    ],
-    "featuredProjectIds": [
-      "project-alpha-showcase"
-    ]
-  },
   "portfolio": {
     "displaySettings": {
       "defaultSortOrder": "date_desc",
@@ -215,108 +234,153 @@
       "portfolioUrl": "https://yourdomain.com"
     },
     "summary": "A highly motivated and detail-oriented professional with X years of experience in [Field/Industry]. Seeking to leverage extensive expertise in [Key Skill 1] and [Key Skill 2] to contribute to [Objective/Company Type].",
-    "education": [
+    "sections": [
       {
-        "id": "edu_masters",
-        "degree": "Master of Science in Computer Science",
-        "institution": "University of Technology",
-        "location": "City, Country",
-        "graduationDate": "May 2020",
-        "details": [
-          "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
-          "GPA: 3.9/4.0, Dean's List."
-        ]
-      }
-    ],
-    "workExperience": [
-      {
-        "id": "work_current_job",
-        "jobTitle": "Senior Software Engineer",
-        "company": "Tech Solutions Inc.",
-        "companyUrl": "https://techsolutions.example.com",
-        "location": "City, Country",
-        "startDate": "June 2022",
-        "endDate": "Present",
-        "responsibilities": [
-          "Led the development of [Project X], resulting in a 20% increase in user engagement.",
-          "Mentored junior developers and conducted code reviews.",
-          "Collaborated with product managers to define project requirements and timelines."
+        "id": "ee253987-5545-4d23-a53e-b1e93c314f72",
+        "title": "Education",
+        "type": "education",
+        "items": [
+          {
+            "id": "edu_masters",
+            "degree": "Master of Science in Computer Science",
+            "institution": "University of Technology",
+            "location": "City, Country",
+            "graduationDate": "May 2020",
+            "details": [
+              "Thesis: 'Advanced Algorithms for AI-driven Web Applications'.",
+              "GPA: 3.9/4.0, Dean's List."
+            ]
+          }
         ],
-        "technologiesUsed": [
-          "Java",
-          "Spring Boot",
-          "AWS",
-          "Microservices"
-        ]
-      }
-    ],
-    "skills": [
-      {
-        "category": "Programming Languages",
-        "items": [
-          "JavaScript (ESNext)",
-          "Python",
-          "Java",
-          "C++",
-          "SQL"
-        ]
+        "isVisible": true,
+        "sortOrder": 0
       },
       {
-        "category": "Frameworks & Libraries",
+        "id": "de321d7a-26c7-4513-a038-51b9b15b7b6c",
+        "title": "Professional Experience",
+        "type": "work_experience",
         "items": [
-          "React",
-          "Next.js",
-          "Node.js",
-          "Express",
-          "Spring Boot",
-          "Django"
-        ]
+          {
+            "id": "work_current_job",
+            "jobTitle": "Senior Software Engineer",
+            "company": "Tech Solutions Inc.",
+            "companyUrl": "https://techsolutions.example.com",
+            "location": "City, Country",
+            "startDate": "June 2022",
+            "endDate": "Present",
+            "responsibilities": [
+              "Led the development of [Project X], resulting in a 20% increase in user engagement.",
+              "Mentored junior developers and conducted code reviews.",
+              "Collaborated with product managers to define project requirements and timelines."
+            ],
+            "technologiesUsed": [
+              "Java",
+              "Spring Boot",
+              "AWS",
+              "Microservices"
+            ]
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 1
       },
       {
-        "category": "Databases",
+        "id": "d40fe370-61ec-4e41-8ba7-f8d59ff1444d",
+        "title": "Skills & Expertise",
+        "type": "skills",
         "items": [
-          "PostgreSQL",
-          "MongoDB",
-          "MySQL",
-          "Redis"
-        ]
+          {
+            "category": "Programming Languages",
+            "items": [
+              "JavaScript (ESNext)",
+              "Python",
+              "Java",
+              "C++",
+              "SQL"
+            ]
+          },
+          {
+            "category": "Frameworks & Libraries",
+            "items": [
+              "React",
+              "Next.js",
+              "Node.js",
+              "Express",
+              "Spring Boot",
+              "Django"
+            ]
+          },
+          {
+            "category": "Databases",
+            "items": [
+              "PostgreSQL",
+              "MongoDB",
+              "MySQL",
+              "Redis"
+            ]
+          },
+          {
+            "category": "Tools & Platforms",
+            "items": [
+              "Git",
+              "Docker",
+              "Kubernetes",
+              "AWS",
+              "Azure",
+              "Jenkins"
+            ]
+          },
+          {
+            "category": "Languages",
+            "items": [
+              "English (Native)",
+              "Spanish (Proficient)"
+            ]
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 2
       },
       {
-        "category": "Tools & Platforms",
+        "id": "04d146f6-ca20-40c4-91c6-3910b4cdcd9d",
+        "title": "Publications",
+        "type": "publications",
         "items": [
-          "Git",
-          "Docker",
-          "Kubernetes",
-          "AWS",
-          "Azure",
-          "Jenkins",
-          "JIRA"
-        ]
+          {
+            "id": "pub_ai_paper",
+            "title": "A Novel Approach to Machine Learning Model Optimization",
+            "authors": "Your Name, Co-author Name",
+            "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
+            "date": "October 2023",
+            "url": "https://doi.org/your-paper-link"
+          }
+        ],
+        "isVisible": true,
+        "sortOrder": 3
       },
       {
-        "category": "Languages",
-        "items": [
-          "English (Native)",
-          "Spanish (Proficient)"
-        ]
-      }
-    ],
-    "publications": [
+        "title": "Professional Experience",
+        "type": "work_experience",
+        "items": [],
+        "isVisible": true,
+        "id": "5a8671a6-4640-4758-ab7a-0ce0e2c2da10",
+        "sortOrder": 4
+      },
       {
-        "id": "pub_ai_paper",
-        "title": "A Novel Approach to Machine Learning Model Optimization",
-        "authors": "Your Name, Co-author Name",
-        "conferenceOrJournal": "International Journal of AI Research, Vol. 5, Issue 2",
-        "date": "October 2023",
-        "url": "https://doi.org/your-paper-link"
-      }
-    ],
-    "awardsAndHonors": [
+        "id": "section_1749582858905",
+        "title": "Certifications",
+        "type": "certifications",
+        "items": [],
+        "isVisible": true,
+        "sortOrder": 5
+      },
       {
-        "id": "award_hackathon",
-        "name": "Best Innovation Award - Tech Hackathon 2022",
-        "issuer": "Tech Hackathon Organizers",
-        "date": "March 2022"
+        "id": "section_1749582986724",
+        "title": "Awards & Honors",
+        "type": "awards",
+        "items": [],
+        "isVisible": false,
+        "sortOrder": 6
       }
     ]
   },
