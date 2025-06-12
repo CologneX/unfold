@@ -66,6 +66,9 @@ import {
   isCVSkillCategoryItem,
   isCVPublicationItem,
   isCVAwardItem,
+  isCVCertificationItem,
+  isCVLanguageItem,
+  isCVVolunteerExperienceItem,
   isCVCustomItem,
 } from "@/types/types";
 import { updateUserProfile, updateCV } from "@/app/actions";
@@ -155,7 +158,7 @@ export function ProfileEditForm({
   const [saving, setSaving] = useState(false);
   const [selectedSectionType, setSelectedSectionType] =
     useState<CVSectionType>("education");
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  // const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   // Delete confirmation states
   const [
@@ -302,6 +305,113 @@ export function ProfileEditForm({
             }
             return null;
           },
+          // Language validation
+          language: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "languages" && isCVLanguageItem(item)) {
+              return value && value.trim() ? null : "Language is required";
+            }
+            return null;
+          },
+          proficiency: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "languages" && isCVLanguageItem(item)) {
+              return value && value.trim()
+                ? null
+                : "Proficiency level is required";
+            }
+            return null;
+          },
+          // Volunteer Experience validation
+          organization: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "volunteering" &&
+              isCVVolunteerExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Organization is required";
+            }
+            return null;
+          },
+          role: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "volunteering" &&
+              isCVVolunteerExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Role is required";
+            }
+            return null;
+          },
+          startDate: (value, values, path) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "volunteering" &&
+              isCVVolunteerExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Start date is required";
+            }
+            return null;
+          },
+          endDate: (value: string, values: ProfileEditorForm, path: string) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "volunteering" &&
+              isCVVolunteerExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "End date is required";
+            }
+            return null;
+          },
+          description: (
+            value: string,
+            values: ProfileEditorForm,
+            path: string
+          ) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (
+              section?.type === "volunteering" &&
+              isCVVolunteerExperienceItem(item)
+            ) {
+              return value && value.trim() ? null : "Description is required";
+            }
+            return null;
+          },
           // Award validation
           name: (value, values, path) => {
             const pathParts = path.split(".");
@@ -328,13 +438,13 @@ export function ProfileEditForm({
       ) as HTMLInputElement;
       if (firstInput) {
         firstInput.focus();
-        setEditingItemId(`${sectionIndex}-${itemIndex}`);
+        // setEditingItemId(`${sectionIndex}-${itemIndex}`);
       }
     }, 100);
   };
 
   // Check if there are unsaved changes
-  const hasUnsavedChanges = form.isDirty() || editingItemId !== null;
+  const hasUnsavedChanges = form.isDirty();
 
   // Delete confirmation handler
   const handleDeleteConfirmation = (
@@ -414,7 +524,7 @@ export function ProfileEditForm({
   const handleSave = async (values: ProfileEditorForm) => {
     try {
       setSaving(true);
-      setEditingItemId(null);
+      // setEditingItemId(null);
 
       // Update profile
       await updateUserProfile(values);
@@ -480,6 +590,9 @@ export function ProfileEditForm({
           "socialLinks",
           form.values.socialLinks.filter((_, i) => i !== index)
         );
+        
+        // Manually mark form as dirty since deletion should enable save button
+        form.setDirty({ socialLinks: true });
       }
     );
   };
@@ -507,15 +620,15 @@ export function ProfileEditForm({
 
   // CV Section Management
   const addNewSection = () => {
-    if (hasUnsavedChanges) {
-      notifications.show({
-        title: "Unsaved Changes",
-        message:
-          "Please save your current changes before adding a new section.",
-        color: "orange",
-      });
-      return;
-    }
+    // if (hasUnsavedChanges) {
+    //   notifications.show({
+    //     title: "Unsaved Changes",
+    //     message:
+    //       "Please save your current changes before adding a new section.",
+    //     color: "orange",
+    //   });
+    //   return;
+    // }
 
     const maxSortOrder = Math.max(
       ...form.values.cvSections.map((s) => s.sortOrder),
@@ -645,6 +758,7 @@ export function ProfileEditForm({
     const sections = [...form.values.cvSections];
     sections[sectionIndex].isVisible = !sections[sectionIndex].isVisible;
     form.setFieldValue("cvSections", sections);
+    form.setDirty({ cvSections: true });
   };
 
   const deleteSection = (sectionIndex: number, section: CVSection) => {
@@ -662,6 +776,10 @@ export function ProfileEditForm({
           (_, i) => i !== sectionIndex
         );
         form.setFieldValue("cvSections", sections);
+        
+        // Manually mark form as dirty since deletion should enable save button
+        form.setDirty({ cvSections: true });
+        
         notifications.show({
           title: "Success",
           message: "Section deleted successfully!",
@@ -675,7 +793,7 @@ export function ProfileEditForm({
     sectionIndex: number,
     sectionType: CVSectionType
   ) => {
-    if (hasUnsavedChanges && editingItemId !== null) {
+    if (hasUnsavedChanges) {
       notifications.show({
         title: "Unsaved Changes",
         message:
@@ -811,6 +929,13 @@ export function ProfileEditForm({
       itemTitle = item.title || `Publication #${itemIndex + 1}`;
     } else if (isCVAwardItem(item)) {
       itemTitle = item.name || `Award #${itemIndex + 1}`;
+    } else if (isCVLanguageItem(item)) {
+      itemTitle = item.language || `Language #${itemIndex + 1}`;
+    } else if (isCVVolunteerExperienceItem(item)) {
+      itemTitle =
+        `${item.role || "Volunteer Role"} at ${
+          item.organization || "Organization"
+        }` || `Volunteer Experience #${itemIndex + 1}`;
     } else if (isCVCustomItem(item)) {
       itemTitle = item.title || `Custom Item #${itemIndex + 1}`;
     } else {
@@ -830,11 +955,14 @@ export function ProfileEditForm({
           (_, i) => i !== itemIndex
         );
         form.setFieldValue("cvSections", sections);
+        
+        // Manually mark form as dirty since deletion should enable save button
+        form.setDirty({ cvSections: true });
 
         // Clear editing state if this item was being edited
-        if (editingItemId === `${sectionIndex}-${itemIndex}`) {
-          setEditingItemId(null);
-        }
+        // if (editingItemId === `${sectionIndex}-${itemIndex}`) {
+        //   setEditingItemId(null);
+        // }
 
         notifications.show({
           title: "Success",
@@ -895,8 +1023,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.degree`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
               <TextInput
@@ -905,8 +1031,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.graduationDate`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <Group grow>
@@ -916,8 +1040,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.institution`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
               <TextInput
@@ -926,8 +1048,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.location`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <TagsInput
@@ -936,8 +1056,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.details`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               data={[]}
             />
           </Stack>
@@ -979,8 +1097,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.jobTitle`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
               <TextInput
@@ -989,8 +1105,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.company`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
             </Group>
@@ -1001,8 +1115,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.location`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
               <TextInput
                 label="Company URL"
@@ -1010,8 +1122,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.companyUrl`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <Group grow>
@@ -1021,8 +1131,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.startDate`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
               <TextInput
                 label="End Date"
@@ -1030,8 +1138,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.endDate`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <TagsInput
@@ -1040,8 +1146,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.responsibilities`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               data={[]}
             />
             <TagsInput
@@ -1050,8 +1154,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.technologiesUsed`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               data={[]}
             />
           </Stack>
@@ -1092,8 +1194,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.category`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               required
             />
             <TagsInput
@@ -1102,8 +1202,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.items`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               data={[]}
             />
           </Stack>
@@ -1144,8 +1242,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.title`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               required
             />
             <Group grow>
@@ -1155,8 +1251,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.authors`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
               <TextInput
                 label="Date"
@@ -1164,8 +1258,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.date`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <Group grow>
@@ -1175,8 +1267,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.conferenceOrJournal`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
               <TextInput
                 label="URL"
@@ -1184,8 +1274,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.url`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
           </Stack>
@@ -1227,8 +1315,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.name`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
               <TextInput
@@ -1237,8 +1323,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.issuer`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <TextInput
@@ -1247,8 +1331,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.date`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
             />
             <Textarea
               label="Description"
@@ -1257,8 +1339,154 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.description`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVLanguageItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Language #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Language"
+                placeholder="e.g., Spanish, French, German"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.language`
+                )}
+                required
+              />
+              <Select
+                label="Proficiency Level"
+                placeholder="Select level"
+                data={[
+                  { value: "Native", label: "Native" },
+                  { value: "Fluent", label: "Fluent" },
+                  { value: "Intermediate", label: "Intermediate" },
+                  { value: "Basic", label: "Basic" },
+                ]}
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.proficiency`
+                )}
+                required
+              />
+            </Group>
+            <TextInput
+              label="Proof URL (Optional)"
+              placeholder="https://certificate-url.com"
+              description="Link to certificate, test results, or other proof of proficiency"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.proofUrl`
+              )}
+            />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVVolunteerExperienceItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Volunteer Experience #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Organization"
+                placeholder="e.g., Red Cross, Local Food Bank"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.organization`
+                )}
+                required
+              />
+              <TextInput
+                label="Role"
+                placeholder="e.g., Volunteer Coordinator, Tutor"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.role`
+                )}
+                required
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Start Date"
+                placeholder="Jan 2023"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.startDate`
+                )}
+                required
+              />
+              <TextInput
+                label="End Date"
+                placeholder="Present or Dec 2023"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.endDate`
+                )}
+                required
+              />
+            </Group>
+            <TextInput
+              label="Location (Optional)"
+              placeholder="City, Country"
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.location`
+              )}
+            />
+            <Textarea
+              label="Description"
+              placeholder="Describe your volunteer work, responsibilities, and achievements..."
+              rows={4}
+              {...form.getInputProps(
+                `cvSections.${sectionIndex}.items.${itemIndex}.description`
+              )}
+              required
             />
           </Stack>
         </Card>
@@ -1299,8 +1527,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.title`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
                 required
               />
               <TextInput
@@ -1309,8 +1535,6 @@ export function ProfileEditForm({
                 {...form.getInputProps(
                   `cvSections.${sectionIndex}.items.${itemIndex}.subtitle`
                 )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
               />
             </Group>
             <TextInput
@@ -1319,8 +1543,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.date`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
             />
             <Textarea
               label="Description"
@@ -1329,8 +1551,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.description`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
             />
             <TagsInput
               label="Additional Details"
@@ -1338,90 +1558,6 @@ export function ProfileEditForm({
               {...form.getInputProps(
                 `cvSections.${sectionIndex}.items.${itemIndex}.details`
               )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
-              data={[]}
-            />
-          </Stack>
-        </Card>
-      );
-    }
-
-    if (isCVCustomItem(item)) {
-      return (
-        <Card
-          key={itemId}
-          padding="md"
-          radius="md"
-          withBorder
-          data-section={sectionIndex}
-          data-item={itemIndex}
-        >
-          <Group justify="space-between" align="flex-start" mb="md">
-            <Text fw={500} size="sm" c="dimmed">
-              Custom Item #{itemIndex + 1}
-            </Text>
-            <Button
-              variant="light"
-              color="red"
-              size="xs"
-              leftSection={<DeleteOutlined />}
-              onClick={() =>
-                deleteItemFromSection(sectionIndex, itemIndex, item)
-              }
-            >
-              Delete
-            </Button>
-          </Group>
-          <Stack gap="xs">
-            <Group grow>
-              <TextInput
-                label="Title"
-                placeholder="Item title"
-                {...form.getInputProps(
-                  `cvSections.${sectionIndex}.items.${itemIndex}.title`
-                )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
-                required
-              />
-              <TextInput
-                label="Subtitle"
-                placeholder="Optional subtitle"
-                {...form.getInputProps(
-                  `cvSections.${sectionIndex}.items.${itemIndex}.subtitle`
-                )}
-                onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-                onBlur={() => setEditingItemId(null)}
-              />
-            </Group>
-            <TextInput
-              label="Date"
-              placeholder="Date or date range"
-              {...form.getInputProps(
-                `cvSections.${sectionIndex}.items.${itemIndex}.date`
-              )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
-            />
-            <Textarea
-              label="Description"
-              placeholder="Main description of this item..."
-              rows={3}
-              {...form.getInputProps(
-                `cvSections.${sectionIndex}.items.${itemIndex}.description`
-              )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
-            />
-            <TagsInput
-              label="Additional Details"
-              placeholder="Type detail and press Enter"
-              {...form.getInputProps(
-                `cvSections.${sectionIndex}.items.${itemIndex}.details`
-              )}
-              onFocus={() => setEditingItemId(`${sectionIndex}-${itemIndex}`)}
-              onBlur={() => setEditingItemId(null)}
               data={[]}
             />
           </Stack>
@@ -1477,11 +1613,7 @@ export function ProfileEditForm({
             <Button variant="light" onClick={closeDeleteModal}>
               Cancel
             </Button>
-            <Button
-              color="red"
-              onClick={confirmDelete}
-              leftSection={<DeleteOutlined />}
-            >
+            <Button color="red" variant="subtle" onClick={confirmDelete}>
               Delete
             </Button>
           </Group>
@@ -1884,9 +2016,9 @@ export function ProfileEditForm({
                                 onClick={() =>
                                   addItemToSection(sectionIndex, section.type)
                                 }
-                                disabled={
-                                  hasUnsavedChanges && editingItemId !== null
-                                }
+                                // disabled={
+                                //   hasUnsavedChanges
+                                // }
                               >
                                 Add Item
                               </Button>

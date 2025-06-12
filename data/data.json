@@ -122,13 +122,6 @@
               "Azure",
               "Jenkins"
             ]
-          },
-          {
-            "category": "Languages",
-            "items": [
-              "English (Native)",
-              "Spanish (Proficient)"
-            ]
           }
         ],
         "isVisible": true,
@@ -172,7 +165,7 @@
         "title": "Awards & Honors",
         "type": "awards",
         "items": [],
-        "isVisible": false,
+        "isVisible": true,
         "sortOrder": 6
       }
     ]
@@ -329,13 +322,6 @@
               "Azure",
               "Jenkins"
             ]
-          },
-          {
-            "category": "Languages",
-            "items": [
-              "English (Native)",
-              "Spanish (Proficient)"
-            ]
           }
         ],
         "isVisible": true,
@@ -379,79 +365,9 @@
         "title": "Awards & Honors",
         "type": "awards",
         "items": [],
-        "isVisible": false,
+        "isVisible": true,
         "sortOrder": 6
       }
     ]
-  },
-  "resumes": [
-    {
-      "id": "resume_web_dev_2025",
-      "nameForUser": "Web Developer Resume (Updated May 2025)",
-      "publicTitle": "Web Developer",
-      "contactInformation": {
-        "email": "your.webdev.resume@example.com"
-      },
-      "summary": "Dynamic and results-driven Web Developer with 5+ years of experience specializing in front-end technologies like React and Next.js. Passionate about building accessible and performant user interfaces.",
-      "sections": [
-        {
-          "id": "resume_webdev_exp",
-          "title": "Professional Experience",
-          "type": "experience",
-          "items": [
-            {
-              "jobTitle": "Frontend Developer",
-              "company": "Creative Agency X",
-              "date": "2022 - 2024",
-              "achievements": [
-                "Developed responsive UIs for 10+ client websites, improving Lighthouse scores by an average of 20 points.",
-                "Led a migration from vanilla JS to React for a major e-commerce client."
-              ],
-              "relatedPortfolioProjectIds": [
-                "project-alpha-showcase"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "resume_webdev_skills",
-          "title": "Technical Skills",
-          "type": "skills_list",
-          "items": [
-            "React",
-            "Next.js",
-            "TypeScript",
-            "JavaScript",
-            "HTML5",
-            "CSS3/Sass",
-            "Webpack",
-            "Git",
-            "REST APIs"
-          ]
-        },
-        {
-          "id": "resume_webdev_projects",
-          "title": "Projects",
-          "type": "projects",
-          "items": [
-            {
-              "portfolioProjectId": "project-alpha-showcase"
-            }
-          ]
-        },
-        {
-          "id": "resume_webdev_edu",
-          "title": "Education",
-          "type": "education",
-          "items": [
-            {
-              "degree": "B.S. in Web Design & Development",
-              "institution": "State University",
-              "graduationYear": "2019"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  }
 }

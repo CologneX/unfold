@@ -271,6 +271,14 @@ export function isCVCertificationItem(item: CVSectionItem): item is Certificatio
   return typeof item === 'object' && 'name' in item && 'issuer' in item && 'date' in item;
 }
 
+export function isCVLanguageItem(item: CVSectionItem): item is Language {
+  return typeof item === 'object' && 'language' in item && 'proficiency' in item;
+}
+
+export function isCVVolunteerExperienceItem(item: CVSectionItem): item is VolunteerExperience {
+  return typeof item === 'object' && 'organization' in item && 'role' in item && 'description' in item;
+}
+
 export function isCVCustomItem(item: CVSectionItem): item is CustomCVItem {
   return typeof item === 'object' && 'title' in item && !('degree' in item) && !('jobTitle' in item);
 }
