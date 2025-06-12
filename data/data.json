@@ -195,30 +195,6 @@
         ],
         "isVisible": true,
         "sortOrder": 3
-      },
-      {
-        "title": "Professional Experience",
-        "type": "work_experience",
-        "items": [],
-        "isVisible": true,
-        "id": "5a8671a6-4640-4758-ab7a-0ce0e2c2da10",
-        "sortOrder": 4
-      },
-      {
-        "id": "section_1749582858905",
-        "title": "Certifications",
-        "type": "certifications",
-        "items": [],
-        "isVisible": true,
-        "sortOrder": 5
-      },
-      {
-        "id": "section_1749582986724",
-        "title": "Awards & Honors",
-        "type": "awards",
-        "items": [],
-        "isVisible": true,
-        "sortOrder": 6
       }
     ]
   }

@@ -718,10 +718,31 @@ export async function createCustomSection(title: string): Promise<UUID> {
 // ========================================
 
 export async function updateUserProfile(
-  profileData: UserProfile
+  profileData: UserProfile & { [key: string]: any }
 ): Promise<void> {
   const data = await readPortfolioData();
-  data.userProfile = profileData;
+
+  const {
+    name,
+    tagline,
+    email,
+    phone,
+    location,
+    websiteUrl,
+    profilePictureUrl,
+    socialLinks,
+  } = profileData;
+
+  data.userProfile = {
+    name,
+    tagline,
+    email,
+    phone,
+    location,
+    websiteUrl,
+    profilePictureUrl,
+    socialLinks,
+  };
   await writePortfolioData(data);
 }
 
