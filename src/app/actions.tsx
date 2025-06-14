@@ -807,10 +807,6 @@ export async function deleteProject(projectSlug: string): Promise<void> {
   // Remove project from portfolio
   data.portfolio.projects.splice(projectIndex, 1);
 
-  // Remove project from featured projects in landing page
-  data.landingPage.featuredProjectIds =
-    data.landingPage.featuredProjectIds.filter((slug) => slug !== projectSlug);
-
   await writePortfolioData(data);
 }
 
@@ -825,56 +821,6 @@ export async function deleteCallToAction(ctaId: UUID): Promise<void> {
   }
 
   data.landingPage.callToActions.splice(ctaIndex, 1);
-  await writePortfolioData(data);
-}
-
-// ========================================
-// Featured Projects Management
-// ========================================
-
-export async function addFeaturedProject(projectSlug: string): Promise<void> {
-  const data = await readPortfolioData();
-
-  // Check if project exists
-  const project = data.portfolio.projects.find((p) => p.slug === projectSlug);
-  if (!project) {
-    throw new Error(`Project with slug ${projectSlug} not found`);
-  }
-
-  // Check if already featured
-  if (data.landingPage.featuredProjectIds.includes(projectSlug)) {
-    throw new Error(`Project ${projectSlug} is already featured`);
-  }
-
-  data.landingPage.featuredProjectIds.push(projectSlug);
-  await writePortfolioData(data);
-}
-
-export async function removeFeaturedProject(
-  projectSlug: string
-): Promise<void> {
-  const data = await readPortfolioData();
-
-  data.landingPage.featuredProjectIds =
-    data.landingPage.featuredProjectIds.filter((slug) => slug !== projectSlug);
-
-  await writePortfolioData(data);
-}
-
-export async function reorderFeaturedProjects(
-  projectSlugs: string[]
-): Promise<void> {
-  const data = await readPortfolioData();
-
-  // Validate that all slugs exist as projects
-  for (const slug of projectSlugs) {
-    const project = data.portfolio.projects.find((p) => p.slug === slug);
-    if (!project) {
-      throw new Error(`Project with slug ${slug} not found`);
-    }
-  }
-
-  data.landingPage.featuredProjectIds = projectSlugs;
   await writePortfolioData(data);
 }
 

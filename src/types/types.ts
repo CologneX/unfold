@@ -50,7 +50,6 @@ export interface LandingPage {
   mainHeadline: string;
   introductionParagraphs: string[];
   callToActions: CallToAction[];
-  featuredProjectIds: UUID[];
 }
 
 // ========================================
