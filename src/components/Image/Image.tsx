@@ -36,18 +36,23 @@ export const EnhancedImage: React.FC<EnhancedImageProps> = ({
   alt,
   ...props
 }) => {
-  const [currentSrc, setCurrentSrc] = useState(normalizeImageUrl(src));
+  const [currentSrc, setCurrentSrc] = useState(() => {
+    const normalizedSrc = normalizeImageUrl(src);
+    return normalizedSrc || null;
+  });
   const [hideImage, setHideImage] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   const handleError = () => {
     if (fallbackSrc && !hasError) {
       // Try fallback image first
-      setCurrentSrc(normalizeImageUrl(fallbackSrc));
+      const normalizedFallback = normalizeImageUrl(fallbackSrc);
+      setCurrentSrc(normalizedFallback || null);
       setHasError(true);
     } else if (showPlaceholderOnError && !hasError) {
       // Try placeholder image
-      setCurrentSrc(getPlaceholderImageUrl());
+      const placeholderUrl = getPlaceholderImageUrl();
+      setCurrentSrc(placeholderUrl || null);
       setHasError(true);
     } else {
       // Hide image completely
@@ -55,8 +60,8 @@ export const EnhancedImage: React.FC<EnhancedImageProps> = ({
     }
   };
 
-  // If image should be hidden, return null
-  if (hideImage) {
+  // If image should be hidden or no valid src, return null
+  if (hideImage || !currentSrc) {
     return null;
   }
 
