@@ -66,10 +66,10 @@ import {
   isCVSkillCategoryItem,
   isCVPublicationItem,
   isCVAwardItem,
-  isCVCertificationItem,
   isCVLanguageItem,
   isCVVolunteerExperienceItem,
   isCVCustomItem,
+  isCVCertificationItem,
 } from "@/types/types";
 import { updateUserProfile, updateCV } from "@/app/actions";
 import { ImageInput } from "@/components/ImageInput/ImageInput";
@@ -134,10 +134,6 @@ interface ProfileEditorForm {
   socialLinks: SocialLink[];
   cvTitle: string;
   cvSummary: string;
-  cvContactEmail: string;
-  cvPhone: string;
-  cvLinkedinUrl: string;
-  cvPortfolioUrl: string;
   cvSections: CVSection[];
 }
 
@@ -194,10 +190,6 @@ export function ProfileEditForm({
       socialLinks: initialProfile.socialLinks || [],
       cvTitle: initialCV.title || "Curriculum Vitae",
       cvSummary: initialCV.summary || "",
-      cvContactEmail: initialCV.contactInformation?.email || "",
-      cvPhone: initialCV.contactInformation?.phone || "",
-      cvLinkedinUrl: initialCV.contactInformation?.linkedinUrl || "",
-      cvPortfolioUrl: initialCV.contactInformation?.portfolioUrl || "",
       cvSections: initialCV.sections || [],
     },
     validate: {
@@ -205,12 +197,6 @@ export function ProfileEditForm({
       tagline: (value) => (value.trim() ? null : "Tagline is required"),
       email: (value) => (/^\S+@\S+\.\S+$/.test(value) ? null : "Invalid email"),
       websiteUrl: (value) =>
-        !value || /^https?:\/\/.+/.test(value) ? null : "Invalid URL format",
-      cvContactEmail: (value) =>
-        !value || /^\S+@\S+\.\S+$/.test(value) ? null : "Invalid email format",
-      cvLinkedinUrl: (value) =>
-        !value || /^https?:\/\/.+/.test(value) ? null : "Invalid URL format",
-      cvPortfolioUrl: (value) =>
         !value || /^https?:\/\/.+/.test(value) ? null : "Invalid URL format",
       socialLinks: {
         url: (value) => (/^https?:\/\/.+/.test(value) ? null : "Invalid URL"),
@@ -423,6 +409,35 @@ export function ProfileEditForm({
             if (section?.type === "awards" && isCVAwardItem(item)) {
               return value && value.trim() ? null : "Award name is required";
             }
+
+            if (section?.type === "certifications" && isCVCertificationItem(item)) {
+              return value && value.trim() ? null : "Certification name is required";
+            }
+            return null;
+          },
+          // Certification validation
+          issuer: (value: string, values: ProfileEditorForm, path: string) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "certifications" && isCVCertificationItem(item)) {
+              return value && value.trim() ? null : "Issuing organization is required";
+            }
+            return null;
+          },
+          date: (value: string, values: ProfileEditorForm, path: string) => {
+            const pathParts = path.split(".");
+            const sectionIndex = parseInt(pathParts[1]);
+            const itemIndex = parseInt(pathParts[3]);
+            const section = values.cvSections?.[sectionIndex];
+            const item = section?.items?.[itemIndex];
+
+            if (section?.type === "certifications" && isCVCertificationItem(item)) {
+              return value && value.trim() ? null : "Issue date is required";
+            }
             return null;
           },
         },
@@ -526,19 +541,25 @@ export function ProfileEditForm({
       setSaving(true);
       // setEditingItemId(null);
 
-      // Update profile
-      await updateUserProfile(values);
+      // Prepare user profile data (exclude CV-related fields)
+      const updatedProfile: UserProfile = {
+        name: values.name,
+        tagline: values.tagline,
+        email: values.email,
+        phone: values.phone,
+        location: values.location,
+        websiteUrl: values.websiteUrl,
+        profilePictureUrl: values.profilePictureUrl,
+        socialLinks: values.socialLinks,
+      };
+
+      // Update profile with clean data
+      await updateUserProfile(updatedProfile);
 
       // Update CV with all data including sections
       const updatedCV: CV = {
         title: values.cvTitle,
         summary: values.cvSummary,
-        contactInformation: {
-          email: values.cvContactEmail,
-          phone: values.cvPhone,
-          linkedinUrl: values.cvLinkedinUrl,
-          portfolioUrl: values.cvPortfolioUrl,
-        },
         sections: values.cvSections,
       };
 
@@ -550,7 +571,6 @@ export function ProfileEditForm({
         color: "green",
       });
 
-      // Refresh the page to show updated data
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -620,16 +640,6 @@ export function ProfileEditForm({
 
   // CV Section Management
   const addNewSection = () => {
-    // if (hasUnsavedChanges) {
-    //   notifications.show({
-    //     title: "Unsaved Changes",
-    //     message:
-    //       "Please save your current changes before adding a new section.",
-    //     color: "orange",
-    //   });
-    //   return;
-    // }
-
     const maxSortOrder = Math.max(
       ...form.values.cvSections.map((s) => s.sortOrder),
       -1
@@ -938,6 +948,8 @@ export function ProfileEditForm({
         }` || `Volunteer Experience #${itemIndex + 1}`;
     } else if (isCVCustomItem(item)) {
       itemTitle = item.title || `Custom Item #${itemIndex + 1}`;
+    } else if (isCVCertificationItem(item)) {
+      itemTitle = item.name || `Certification #${itemIndex + 1}`;
     } else {
       itemTitle = `Item #${itemIndex + 1}`;
     }
@@ -1340,6 +1352,89 @@ export function ProfileEditForm({
                 `cvSections.${sectionIndex}.items.${itemIndex}.description`
               )}
             />
+          </Stack>
+        </Card>
+      );
+    }
+
+    if (isCVCertificationItem(item)) {
+      return (
+        <Card
+          key={itemId}
+          padding="md"
+          radius="md"
+          withBorder
+          data-section={sectionIndex}
+          data-item={itemIndex}
+        >
+          <Group justify="space-between" align="flex-start" mb="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Certification #{itemIndex + 1}
+            </Text>
+            <Button
+              variant="light"
+              color="red"
+              size="xs"
+              leftSection={<DeleteOutlined />}
+              onClick={() =>
+                deleteItemFromSection(sectionIndex, itemIndex, item)
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+          <Stack gap="xs">
+            <Group grow>
+              <TextInput
+                label="Certification Name"
+                placeholder="e.g., AWS Certified Solutions Architect"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.name`
+                )}
+                required
+              />
+              <TextInput
+                label="Issuing Organization"
+                placeholder="e.g., Amazon Web Services"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.issuer`
+                )}
+                required
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Issue Date"
+                placeholder="Jan 2024"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.date`
+                )}
+                required
+              />
+              <TextInput
+                label="Expiration Date"
+                placeholder="Jan 2027 (optional)"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.expirationDate`
+                )}
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Credential ID"
+                placeholder="Certificate ID (optional)"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.credentialId`
+                )}
+              />
+              <TextInput
+                label="Credential URL"
+                placeholder="https://verify.certificate.com"
+                {...form.getInputProps(
+                  `cvSections.${sectionIndex}.items.${itemIndex}.credentialUrl`
+                )}
+              />
+            </Group>
           </Stack>
         </Card>
       );
@@ -1860,40 +1955,6 @@ export function ProfileEditForm({
                     rows={4}
                     {...form.getInputProps("cvSummary")}
                   />
-
-                  <Group grow>
-                    <TextInput
-                      label="CV Contact Email"
-                      placeholder="cv.email@example.com"
-                      leftSection={<MailOutlined style={{ fontSize: 16 }} />}
-                      {...form.getInputProps("cvContactEmail")}
-                    />
-
-                    <TextInput
-                      label="CV Phone"
-                      placeholder="+1 (555) 123-4567"
-                      leftSection={<PhoneOutlined style={{ fontSize: 16 }} />}
-                      {...form.getInputProps("cvPhone")}
-                    />
-                  </Group>
-
-                  <Group grow>
-                    <TextInput
-                      label="LinkedIn URL"
-                      placeholder="https://linkedin.com/in/yourprofile"
-                      leftSection={
-                        <LinkedinOutlined style={{ fontSize: 16 }} />
-                      }
-                      {...form.getInputProps("cvLinkedinUrl")}
-                    />
-
-                    <TextInput
-                      label="Portfolio URL"
-                      placeholder="https://yourportfolio.com"
-                      leftSection={<GlobalOutlined style={{ fontSize: 16 }} />}
-                      {...form.getInputProps("cvPortfolioUrl")}
-                    />
-                  </Group>
                 </Stack>
               </Stack>
 

@@ -89,13 +89,6 @@ export interface Portfolio {
 // CV Types
 // ========================================
 
-export interface ContactInformation {
-  email: string;
-  phone?: string;
-  linkedinUrl?: string;
-  portfolioUrl?: string;
-}
-
 export interface Education {
   id: UUID;
   degree: string;
@@ -217,7 +210,6 @@ export interface CustomCVItem {
 
 export interface CV {
   title?: string;
-  contactInformation: ContactInformation;
   summary: string;
   sections: CVSection[];
 }
@@ -264,11 +256,11 @@ export function isCVPublicationItem(item: CVSectionItem): item is Publication {
 }
 
 export function isCVAwardItem(item: CVSectionItem): item is Award {
-  return typeof item === 'object' && 'name' in item && 'issuer' in item;
+  return typeof item === 'object' && 'name' in item && 'issuer' in item && !('credentialId' in item) && !('credentialUrl' in item) && !('expirationDate' in item);
 }
 
 export function isCVCertificationItem(item: CVSectionItem): item is Certification {
-  return typeof item === 'object' && 'name' in item && 'issuer' in item && 'date' in item;
+  return typeof item === 'object' && 'name' in item && 'issuer' in item && 'date' in item && ('credentialId' in item || 'credentialUrl' in item || 'expirationDate' in item);
 }
 
 export function isCVLanguageItem(item: CVSectionItem): item is Language {

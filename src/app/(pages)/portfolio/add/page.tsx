@@ -19,6 +19,7 @@ export default async function AddPortfolioPage() {
       </Container>
     );
   } catch (error) {
+    console.error(error); 
     return (
       <Container py="xl">
         <Paper pos="relative">

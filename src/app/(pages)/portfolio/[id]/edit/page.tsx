@@ -6,6 +6,19 @@ import {
 } from "@/app/actions";
 import PortfolioEditForm from "./form";
 
+/*
+  The function below is to build portfolio project page as static pages.
+  This is to improve the performance of the page.
+  Uncomment the function below to build the page as static pages.
+*/
+// export async function generateStaticParams() {
+//   const projects = await fetchPortfolio();
+//   return projects.map((project) => ({
+//     project: project,
+//   }));
+// }
+
+
 export default async function PortfolioEditPage({
   params,
 }: {

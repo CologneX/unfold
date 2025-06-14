@@ -1,4 +1,3 @@
-import { fetchProject } from "@/app/actions";
 import { EnhancedImage } from "@/components/Image/Image";
 import { isAppDevMode } from "@/lib/utils";
 import Link from "next/link";
@@ -29,17 +28,29 @@ import {
   CheckCircleOutlined,
   PictureOutlined,
 } from "@ant-design/icons";
+import { fetchProject } from "@/app/actions";
+
+/*
+  The function below is to build portfolio project page as static pages.
+  This is to improve the performance of the page.
+  Uncomment the function below to build the page as static pages.
+*/
+// export async function generateStaticParams() {
+//   const projects = await fetchPortfolio();
+//   return projects.map((project) => ({
+//     project: project,
+//   }));
+// }
 
 export default async function PortfolioProjectPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id: slug } = await params;
+  const { id } = await params;
+  const project = await fetchProject(id);
 
   try {
-    const project = await fetchProject(slug);
-
     if (!project) {
       notFound();
     }

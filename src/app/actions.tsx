@@ -718,7 +718,7 @@ export async function createCustomSection(title: string): Promise<UUID> {
 // ========================================
 
 export async function updateUserProfile(
-  profileData: UserProfile & { [key: string]: any }
+  profileData: UserProfile
 ): Promise<void> {
   const data = await readPortfolioData();
 
@@ -1048,16 +1048,3 @@ export async function removeRole(role: string): Promise<void> {
 
   await writePortfolioData(data);
 }
-
-// export async function generateCVPDF(): Promise<Buffer> {
-//   const [cv, userProfile, portfolioProjects] = await Promise.all([
-//     fetchCV(),
-//     fetchUserProfile(),
-//     fetchPortfolio()
-//   ]);
-
-//   const pdfDocument = <CVPDFDocument cv={cv} userProfile={userProfile} portfolioProjects={portfolioProjects} />;
-//   const buffer = await renderToBuffer(pdfDocument);
-
-//   return buffer;
-// }
