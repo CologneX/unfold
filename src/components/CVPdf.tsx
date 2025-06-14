@@ -297,7 +297,15 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               </Text>
             </View>
             <Text style={styles.companyLocation}>
-              {work.company} | {work.location}
+              {work.company} | {work.location}{" "}
+              {work.companyUrl && (
+                <>
+                  |{" "}
+                  <Link src={work.companyUrl} style={styles.link}>
+                    Website
+                  </Link>
+                </>
+              )}
             </Text>
             {work.responsibilities.map((resp, index) => (
               <Text key={index} style={styles.bulletPoint}>

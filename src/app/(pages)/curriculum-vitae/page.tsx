@@ -80,6 +80,9 @@ function WorkExperienceSection({ section }: { section: CVSection }) {
                   <Text size="md" c="dimmed">
                     {work.companyUrl ? (
                       <Anchor href={work.companyUrl} target="_blank">
+                        <LinkOutlined
+                          style={{ fontSize: 14, marginRight: 2 }}
+                        />
                         {work.company}
                       </Anchor>
                     ) : (
