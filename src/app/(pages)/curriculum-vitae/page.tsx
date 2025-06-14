@@ -23,18 +23,8 @@ import {
   PhoneOutlined,
   EnvironmentOutlined,
   BankOutlined,
-  BookOutlined,
-  FileTextOutlined,
-  TrophyOutlined,
   LinkOutlined,
-  LinkedinOutlined,
   GlobalOutlined,
-  SafetyCertificateOutlined,
-  HeartOutlined,
-  TranslationOutlined,
-  SettingOutlined,
-  FolderOutlined,
-  StarOutlined,
 } from "@ant-design/icons";
 import { EnhancedImage } from "@/components/Image/Image";
 import {
@@ -57,39 +47,14 @@ import {
   VolunteerExperience,
   CustomCVItem,
   CVSection,
-  CVSectionType,
 } from "@/types/types";
-
-function getSectionIcon(sectionType: CVSectionType) {
-  switch (sectionType) {
-    case "education":
-      return <BookOutlined />;
-    case "work_experience":
-      return <BankOutlined />;
-    case "skills":
-      return <StarOutlined />;
-    case "publications":
-      return <FileTextOutlined />;
-    case "awards":
-      return <TrophyOutlined />;
-    case "certifications":
-      return <SafetyCertificateOutlined />;
-    case "volunteering":
-      return <HeartOutlined />;
-    case "languages":
-      return <TranslationOutlined />;
-    case "projects":
-      return <FolderOutlined />;
-    case "custom":
-    default:
-      return <SettingOutlined />;
-  }
-}
+import { getSectionIcon, getSocialLinkIcon } from "@/lib/utils";
 
 // Component to render work experience section
 function WorkExperienceSection({ section }: { section: CVSection }) {
-  const workExperience = section.items?.filter(isCVWorkExperienceItem) as WorkExperience[] || [];
-  
+  const workExperience =
+    (section.items?.filter(isCVWorkExperienceItem) as WorkExperience[]) || [];
+
   if (workExperience.length === 0) return null;
 
   return (
@@ -124,7 +89,8 @@ function WorkExperienceSection({ section }: { section: CVSection }) {
                   </Text>
                 </div>
                 <Badge variant="light" size="sm">
-                  {work.startDate} - {work.endDate || (work.current ? "Present" : "")}
+                  {work.startDate} -{" "}
+                  {work.endDate || (work.current ? "Present" : "")}
                 </Badge>
               </Group>
             }
@@ -156,8 +122,9 @@ function WorkExperienceSection({ section }: { section: CVSection }) {
 
 // Component to render education section
 function EducationSection({ section }: { section: CVSection }) {
-  const education = section.items?.filter(isCVEducationItem) as Education[] || [];
-  
+  const education =
+    (section.items?.filter(isCVEducationItem) as Education[]) || [];
+
   if (education.length === 0) return null;
 
   return (
@@ -202,8 +169,9 @@ function EducationSection({ section }: { section: CVSection }) {
 
 // Component to render skills section (sidebar)
 function SkillsSection({ section }: { section: CVSection }) {
-  const skills = section.items?.filter(isCVSkillCategoryItem) as SkillCategory[] || [];
-  
+  const skills =
+    (section.items?.filter(isCVSkillCategoryItem) as SkillCategory[]) || [];
+
   if (skills.length === 0) return null;
 
   return (
@@ -240,8 +208,9 @@ function SkillsSection({ section }: { section: CVSection }) {
 
 // Component to render publications section
 function PublicationsSection({ section }: { section: CVSection }) {
-  const publications = section.items?.filter(isCVPublicationItem) as Publication[] || [];
-  
+  const publications =
+    (section.items?.filter(isCVPublicationItem) as Publication[]) || [];
+
   if (publications.length === 0) return null;
 
   return (
@@ -292,8 +261,8 @@ function PublicationsSection({ section }: { section: CVSection }) {
 
 // Component to render awards section
 function AwardsSection({ section }: { section: CVSection }) {
-  const awards = section.items?.filter(isCVAwardItem) as Award[] || [];
-  
+  const awards = (section.items?.filter(isCVAwardItem) as Award[]) || [];
+
   if (awards.length === 0) return null;
 
   return (
@@ -337,8 +306,9 @@ function AwardsSection({ section }: { section: CVSection }) {
 
 // Component to render certifications section
 function CertificationsSection({ section }: { section: CVSection }) {
-  const certifications = section.items?.filter(isCVCertificationItem) as Certification[] || [];
-  
+  const certifications =
+    (section.items?.filter(isCVCertificationItem) as Certification[]) || [];
+
   if (certifications.length === 0) return null;
 
   return (
@@ -356,14 +326,7 @@ function CertificationsSection({ section }: { section: CVSection }) {
             <Group justify="space-between" align="flex-start">
               <div style={{ flex: 1 }}>
                 <Text fw={600} size="md">
-                  {cert.credentialUrl ? (
-                    <Anchor href={cert.credentialUrl} target="_blank">
-                      {cert.name}
-                      <LinkOutlined style={{ fontSize: 14, marginLeft: 4 }} />
-                    </Anchor>
-                  ) : (
-                    cert.name
-                  )}
+                  {cert.name}
                 </Text>
                 <Text size="sm" c="dimmed">
                   {cert.issuer}
@@ -373,15 +336,15 @@ function CertificationsSection({ section }: { section: CVSection }) {
                     ID: {cert.credentialId}
                   </Text>
                 )}
-                {'description' in cert && (cert as any).description && (
+                {cert.credentialUrl && (
                   <Text size="sm" mt="xs">
-                    <Anchor href={(cert as any).description} target="_blank" size="sm">
+                    <Anchor href={cert.credentialUrl} target="_blank" size="sm">
                       View Certificate
                     </Anchor>
                   </Text>
                 )}
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: "right" }}>
                 <Badge variant="light" size="sm">
                   {cert.date}
                 </Badge>
@@ -401,8 +364,9 @@ function CertificationsSection({ section }: { section: CVSection }) {
 
 // Component to render languages section
 function LanguagesSection({ section }: { section: CVSection }) {
-  const languages = section.items?.filter(isCVLanguageItem) as Language[] || [];
-  
+  const languages =
+    (section.items?.filter(isCVLanguageItem) as Language[]) || [];
+
   if (languages.length === 0) return null;
 
   return (
@@ -436,8 +400,11 @@ function LanguagesSection({ section }: { section: CVSection }) {
 
 // Component to render volunteer experience section
 function VolunteeringSection({ section }: { section: CVSection }) {
-  const volunteers = section.items?.filter(isCVVolunteerExperienceItem) as VolunteerExperience[] || [];
-  
+  const volunteers =
+    (section.items?.filter(
+      isCVVolunteerExperienceItem
+    ) as VolunteerExperience[]) || [];
+
   if (volunteers.length === 0) return null;
 
   return (
@@ -458,7 +425,8 @@ function VolunteeringSection({ section }: { section: CVSection }) {
                   {volunteer.role}
                 </Text>
                 <Text size="md" c="dimmed">
-                  {volunteer.organization} {volunteer.location && `• ${volunteer.location}`}
+                  {volunteer.organization}{" "}
+                  {volunteer.location && `• ${volunteer.location}`}
                 </Text>
               </div>
               <Badge variant="light" size="sm">
@@ -475,8 +443,9 @@ function VolunteeringSection({ section }: { section: CVSection }) {
 
 // Component to render custom sections
 function CustomSection({ section }: { section: CVSection }) {
-  const customItems = section.items?.filter(isCVCustomItem) as CustomCVItem[] || [];
-  
+  const customItems =
+    (section.items?.filter(isCVCustomItem) as CustomCVItem[]) || [];
+
   if (customItems.length === 0) return null;
 
   return (
@@ -508,11 +477,13 @@ function CustomSection({ section }: { section: CVSection }) {
                 </Badge>
               )}
             </Group>
-            
+
             {item.description && (
-              <Text size="sm" mb="sm">{item.description}</Text>
+              <Text size="sm" mb="sm">
+                {item.description}
+              </Text>
             )}
-            
+
             {item.details && item.details.length > 0 && (
               <List spacing="xs" size="sm">
                 {item.details.map((detail, index) => (
@@ -565,15 +536,15 @@ export default async function CVPage() {
   const [cv, userProfile] = await Promise.all([fetchCV(), fetchUserProfile()]);
 
   // Get all visible sections sorted by sortOrder
-  const visibleSections = cv.sections?.filter(s => s.isVisible) || [];
+  const visibleSections = cv.sections?.filter((s) => s.isVisible) || [];
   visibleSections.sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Separate sections for main content and sidebar
-  const mainSections = visibleSections.filter(s => 
-    !['skills', 'languages'].includes(s.type)
+  const mainSections = visibleSections.filter(
+    (s) => !["skills", "languages"].includes(s.type)
   );
-  const sidebarSections = visibleSections.filter(s => 
-    ['skills', 'languages'].includes(s.type)
+  const sidebarSections = visibleSections.filter((s) =>
+    ["skills", "languages"].includes(s.type)
   );
 
   return (
@@ -610,15 +581,15 @@ export default async function CVPage() {
                 <ThemeIcon variant="light" size="sm">
                   <MailOutlined style={{ fontSize: 14 }} />
                 </ThemeIcon>
-                <Text size="sm">{cv.contactInformation.email}</Text>
+                <Text size="sm">{userProfile.email}</Text>
               </Group>
 
-              {cv.contactInformation.phone && (
+              {userProfile.phone && (
                 <Group gap="xs">
                   <ThemeIcon variant="light" size="sm">
                     <PhoneOutlined style={{ fontSize: 14 }} />
                   </ThemeIcon>
-                  <Text size="sm">{cv.contactInformation.phone}</Text>
+                  <Text size="sm">{userProfile.phone}</Text>
                 </Group>
               )}
 
@@ -631,13 +602,13 @@ export default async function CVPage() {
                 </Group>
               )}
 
-              {cv.contactInformation.portfolioUrl && (
+              {userProfile.websiteUrl && (
                 <Group gap="xs">
                   <ThemeIcon variant="light" size="sm">
                     <GlobalOutlined style={{ fontSize: 14 }} />
                   </ThemeIcon>
                   <Anchor
-                    href={cv.contactInformation.portfolioUrl}
+                    href={userProfile.websiteUrl}
                     target="_blank"
                     size="sm"
                   >
@@ -646,20 +617,17 @@ export default async function CVPage() {
                 </Group>
               )}
 
-              {cv.contactInformation.linkedinUrl && (
-                <Group gap="xs">
-                  <ThemeIcon variant="light" size="sm">
-                    <LinkedinOutlined style={{ fontSize: 14 }} />
-                  </ThemeIcon>
-                  <Anchor
-                    href={cv.contactInformation.linkedinUrl}
-                    target="_blank"
-                    size="sm"
-                  >
-                    LinkedIn
-                  </Anchor>
-                </Group>
-              )}
+              {userProfile.socialLinks.length > 0 &&
+                userProfile.socialLinks.map((link) => (
+                  <Group gap="xs" key={link.id}>
+                    <ThemeIcon variant="light" size="sm">
+                      {getSocialLinkIcon(link.platformName)}
+                    </ThemeIcon>
+                    <Anchor href={link.url} target="_blank" size="sm">
+                      {link.platformName}
+                    </Anchor>
+                  </Group>
+                ))}
             </Stack>
           </GridCol>
         </Grid>
