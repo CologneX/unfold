@@ -1,8 +1,15 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { 
-  CV, 
-  UserProfile, 
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Link,
+} from "@react-pdf/renderer";
+import {
+  CV,
+  UserProfile,
   Project,
   CVSection,
   isCVEducationItem,
@@ -14,15 +21,7 @@ import {
   isCVLanguageItem,
   isCVVolunteerExperienceItem,
   isCVCustomItem,
-  Education,
   WorkExperience,
-  SkillCategory,
-  Publication,
-  Award,
-  Certification,
-  Language,
-  VolunteerExperience,
-  CustomCVItem,
 } from "@/types/types";
 import { formatDateToMonthYear } from "@/lib/utils";
 
@@ -47,23 +46,31 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: "#000000",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
   tagline: {
     fontSize: 12,
     marginBottom: 10,
     color: "#333333",
     fontStyle: "italic",
+    textAlign: "center",
   },
   contactInfo: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "column",
     marginBottom: 5,
+    justifyContent: "center",
+    alignItems: "center",
   },
   contactItem: {
     fontSize: 10,
-    marginRight: 15,
     marginBottom: 3,
     color: "#000000",
+  },
+  contactDivider: {
+    fontSize: 10,
+    marginHorizontal: 5,
+    color: "#000000",
+    fontWeight: "bold",
   },
   section: {
     marginBottom: 20,
@@ -178,6 +185,11 @@ const styles = StyleSheet.create({
     color: "#000000",
     textAlign: "justify",
   },
+  link: {
+    fontSize: 10,
+    color: "#0066cc",
+    textDecoration: "underline",
+  },
   certificationEntry: {
     marginBottom: 12,
   },
@@ -271,14 +283,17 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
   // Helper function to render section items based on type
   const renderSectionItems = (section: CVSection) => {
     switch (section.type) {
-      case 'work_experience':
-        const workExperience = section.items.filter(isCVWorkExperienceItem) as WorkExperience[];
+      case "work_experience":
+        const workExperience = section.items.filter(
+          isCVWorkExperienceItem
+        ) as WorkExperience[];
         return workExperience.map((work) => (
           <View key={work.id} style={styles.workEntry}>
             <View style={styles.jobHeader}>
               <Text style={styles.jobTitle}>{work.jobTitle}</Text>
               <Text style={styles.dateRange}>
-                {work.startDate} - {work.endDate || (work.current ? "Present" : "")}
+                {work.startDate} -{" "}
+                {work.endDate || (work.current ? "Present" : "")}
               </Text>
             </View>
             <Text style={styles.companyLocation}>
@@ -297,13 +312,15 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
           </View>
         ));
 
-      case 'education':
-        const education = section.items.filter(isCVEducationItem) as Education[];
+      case "education":
+        const education = section.items.filter(isCVEducationItem);
         return education.map((edu) => (
           <View key={edu.id} style={styles.educationEntry}>
             <View style={styles.degreeHeader}>
               <Text style={styles.degree}>{edu.degree}</Text>
-              <Text style={styles.dateRange}>{edu.graduationDate || (edu.current ? "Present" : "")}</Text>
+              <Text style={styles.dateRange}>
+                {edu.graduationDate || (edu.current ? "Present" : "")}
+              </Text>
             </View>
             <Text style={styles.institution}>
               {edu.institution} | {edu.location}
@@ -317,8 +334,8 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
           </View>
         ));
 
-      case 'skills':
-        const skills = section.items.filter(isCVSkillCategoryItem) as SkillCategory[];
+      case "skills":
+        const skills = section.items.filter(isCVSkillCategoryItem);
         return (
           <View style={styles.skillsContainer}>
             {skills.map((skillCategory, index) => (
@@ -334,8 +351,8 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
           </View>
         );
 
-      case 'publications':
-        const publications = section.items.filter(isCVPublicationItem) as Publication[];
+      case "publications":
+        const publications = section.items.filter(isCVPublicationItem);
         return publications.map((pub) => (
           <View key={pub.id} style={styles.projectEntry}>
             <View style={styles.projectHeader}>
@@ -346,18 +363,21 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               <Text style={styles.institution}>{pub.authors}</Text>
             )}
             {pub.conferenceOrJournal && (
-              <Text style={styles.institution}>
-                {pub.conferenceOrJournal}
-              </Text>
+              <Text style={styles.institution}>{pub.conferenceOrJournal}</Text>
             )}
             {pub.url && (
-              <Text style={styles.technologiesUsed}>URL: {pub.url}</Text>
+              <View style={styles.technologiesUsed}>
+                <Text style={styles.technologiesUsed}>URL: </Text>
+                <Link src={pub.url} style={styles.link}>
+                  View Publication
+                </Link>
+              </View>
             )}
           </View>
         ));
 
-      case 'awards':
-        const awards = section.items.filter(isCVAwardItem) as Award[];
+      case "awards":
+        const awards = section.items.filter(isCVAwardItem);
         return awards.map((award) => (
           <View key={award.id} style={styles.projectEntry}>
             <View style={styles.projectHeader}>
@@ -368,21 +388,20 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               <Text style={styles.institution}>{award.issuer}</Text>
             )}
             {award.description && (
-              <Text style={styles.projectDescription}>
-                {award.description}
-              </Text>
+              <Text style={styles.projectDescription}>{award.description}</Text>
             )}
           </View>
         ));
 
-      case 'certifications':
-        const certifications = section.items.filter(isCVCertificationItem) as Certification[];
+      case "certifications":
+        const certifications = section.items.filter(isCVCertificationItem);
         return certifications.map((cert) => (
           <View key={cert.id} style={styles.certificationEntry}>
             <View style={styles.certificationHeader}>
               <Text style={styles.certificationName}>{cert.name}</Text>
               <Text style={styles.dateRange}>
-                {cert.date}{cert.expirationDate ? ` - ${cert.expirationDate}` : ''}
+                {cert.date}
+                {cert.expirationDate ? ` - ${cert.expirationDate}` : ""}
               </Text>
             </View>
             <Text style={styles.certificationIssuer}>{cert.issuer}</Text>
@@ -392,15 +411,18 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               </Text>
             )}
             {cert.credentialUrl && (
-              <Text style={styles.technologiesUsed}>
-                Verification: {cert.credentialUrl}
-              </Text>
+              <View style={styles.technologiesUsed}>
+                <Text style={styles.technologiesUsed}>Verification: </Text>
+                <Link src={cert.credentialUrl} style={styles.link}>
+                  View Certificate
+                </Link>
+              </View>
             )}
           </View>
         ));
 
-      case 'languages':
-        const languages = section.items.filter(isCVLanguageItem) as Language[];
+      case "languages":
+        const languages = section.items.filter(isCVLanguageItem);
         return languages.map((lang) => (
           <View key={lang.id} style={styles.languageEntry}>
             <Text style={styles.languageName}>{lang.language}</Text>
@@ -408,8 +430,10 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
           </View>
         ));
 
-      case 'volunteering':
-        const volunteerExperience = section.items.filter(isCVVolunteerExperienceItem) as VolunteerExperience[];
+      case "volunteering":
+        const volunteerExperience = section.items.filter(
+          isCVVolunteerExperienceItem
+        );
         return volunteerExperience.map((volunteer) => (
           <View key={volunteer.id} style={styles.volunteerEntry}>
             <View style={styles.volunteerHeader}>
@@ -419,7 +443,8 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               </Text>
             </View>
             <Text style={styles.volunteerOrganization}>
-              {volunteer.organization}{volunteer.location && ` | ${volunteer.location}`}
+              {volunteer.organization}
+              {volunteer.location && ` | ${volunteer.location}`}
             </Text>
             <Text style={styles.volunteerDescription}>
               {volunteer.description}
@@ -427,8 +452,8 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
           </View>
         ));
 
-      case 'custom':
-        const customItems = section.items.filter(isCVCustomItem) as CustomCVItem[];
+      case "custom":
+        const customItems = section.items.filter(isCVCustomItem);
         return customItems.map((item) => (
           <View key={item.id} style={styles.customEntry}>
             <View style={styles.customHeader}>
@@ -439,15 +464,14 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               <Text style={styles.customSubtitle}>{item.subtitle}</Text>
             )}
             {item.description && (
-              <Text style={styles.projectDescription}>
-                {item.description}
-              </Text>
+              <Text style={styles.projectDescription}>{item.description}</Text>
             )}
-            {item.details && item.details.map((detail, index) => (
-              <Text key={index} style={styles.bulletPoint}>
-                • {detail}
-              </Text>
-            ))}
+            {item.details &&
+              item.details.map((detail, index) => (
+                <Text key={index} style={styles.bulletPoint}>
+                  • {detail}
+                </Text>
+              ))}
           </View>
         ));
 
@@ -457,8 +481,10 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
   };
 
   // Get all visible sections sorted by sortOrder
-  const visibleSections = cv.sections?.filter(section => section.isVisible)
-    .sort((a, b) => a.sortOrder - b.sortOrder) || [];
+  const visibleSections =
+    cv.sections
+      ?.filter((section) => section.isVisible)
+      .sort((a, b) => a.sortOrder - b.sortOrder) || [];
 
   return (
     <Document>
@@ -470,30 +496,66 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
             <Text style={styles.tagline}>{userProfile.tagline}</Text>
           )}
           <View style={styles.contactInfo}>
-            <Text style={styles.contactItem}>
-              {cv.contactInformation.email}
-            </Text>
-            {cv.contactInformation.phone && (
-              <Text style={styles.contactItem}>
-                {cv.contactInformation.phone}
-              </Text>
-            )}
-            {userProfile.location && (
-              <Text style={styles.contactItem}>{userProfile.location}</Text>
-            )}
-            {cv.contactInformation.linkedinUrl && (
-              <Text style={styles.contactItem}>
-                {cv.contactInformation.linkedinUrl}
-              </Text>
-            )}
-            {cv.contactInformation.portfolioUrl && (
-              <Text style={styles.contactItem}>
-                {cv.contactInformation.portfolioUrl}
-              </Text>
-            )}
-            {userProfile.websiteUrl && (
-              <Text style={styles.contactItem}>{userProfile.websiteUrl}</Text>
-            )}
+            {/* First Row: Email, Phone, Location */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <Text style={styles.contactItem}>{userProfile.email}</Text>
+              {userProfile.phone && (
+                <>
+                  <Text style={styles.contactDivider}>•</Text>
+                  <Text style={styles.contactItem}>{userProfile.phone}</Text>
+                </>
+              )}
+              {userProfile.location && (
+                <>
+                  <Text style={styles.contactDivider}>•</Text>
+                  <Text style={styles.contactItem}>{userProfile.location}</Text>
+                </>
+              )}
+            </View>
+
+            {/* Second Row: Social Links and Website */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                width: "100%",
+                flexWrap: "wrap",
+              }}
+            >
+              {userProfile.socialLinks.map((link, index) => (
+                <View
+                  key={link.platformName}
+                  style={{ flexDirection: "row", alignItems: "center" }}
+                >
+                  {index > 0 && <Text style={styles.contactDivider}>•</Text>}
+                  <View style={styles.contactItem}>
+                    <Link src={link.url} style={styles.link}>
+                      {link.platformName}
+                    </Link>
+                  </View>
+                </View>
+              ))}
+
+              {userProfile.websiteUrl && (
+                <>
+                  {userProfile.socialLinks.length > 0 && (
+                    <Text style={styles.contactDivider}>•</Text>
+                  )}
+                  <View style={styles.contactItem}>
+                    <Link src={userProfile.websiteUrl} style={styles.link}>
+                      Website
+                    </Link>
+                  </View>
+                </>
+              )}
+            </View>
           </View>
         </View>
 
@@ -508,9 +570,12 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
         {/* Dynamic CV Sections */}
         {visibleSections.map((section) => {
           const sectionItems = renderSectionItems(section);
-          
+
           // Only render if section has items
-          if (!sectionItems || (Array.isArray(sectionItems) && sectionItems.length === 0)) {
+          if (
+            !sectionItems ||
+            (Array.isArray(sectionItems) && sectionItems.length === 0)
+          ) {
             return null;
           }
 
@@ -530,7 +595,9 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
               <View key={project.slug} style={styles.projectEntry}>
                 <View style={styles.projectHeader}>
                   <Text style={styles.projectTitle}>{project.title}</Text>
-                  <Text style={styles.dateRange}>{formatDateToMonthYear(project.date)}</Text>
+                  <Text style={styles.dateRange}>
+                    {formatDateToMonthYear(project.date)}
+                  </Text>
                 </View>
                 {project.subtitle && (
                   <Text style={styles.institution}>{project.subtitle}</Text>
@@ -543,11 +610,27 @@ const CVPDFDocument: React.FC<CVPDFDocumentProps> = ({
                     Technologies: {project.technologies.join(", ")}
                   </Text>
                 )}
-                {project.liveProjectUrl && (
-                  <Text style={styles.technologiesUsed}>
-                    Live Project: {project.liveProjectUrl}
-                  </Text>
-                )}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    ...styles.technologiesUsed,
+                  }}
+                >
+                  {project.liveProjectUrl && (
+                    <Link src={project.liveProjectUrl} style={styles.link}>
+                      Live Project
+                    </Link>
+                  )}
+                  {project.liveProjectUrl && project.sourceCodeUrl && (
+                    <Text style={styles.contactDivider}>•</Text>
+                  )}
+                  {project.sourceCodeUrl && (
+                    <Link src={project.sourceCodeUrl} style={styles.link}>
+                      Source Code
+                    </Link>
+                  )}
+                </View>
               </View>
             ))}
           </View>

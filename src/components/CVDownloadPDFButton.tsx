@@ -5,6 +5,7 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import { fetchCV, fetchUserProfile, fetchPortfolio } from "@/app/actions";
 import { CV, UserProfile, Project } from "@/types/types";
 import { useEffect, useState } from "react";
+import { getCVFileName } from "@/lib/utils";
 
 function DownloadButton({
   children,
@@ -54,7 +55,7 @@ export default function CVDowloadPDFButton() {
             portfolioProjects={portfolioProjects}
           />
         }
-        fileName="cv.pdf"
+        fileName={getCVFileName(userProfile)}
       >
         <DownloadButton>CV</DownloadButton>
       </PDFDownloadLink>
